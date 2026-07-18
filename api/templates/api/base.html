@@ -765,11 +765,41 @@
         }
 
         /* Prevent system Webkit search Cancel buttons from rendering */
-        input[type="search"]::-webkit-search-decoration,
-        input[type="search"]::-webkit-search-cancel-button,
-        input[type="search"]::-webkit-search-results-button,
         input[type="search"]::-webkit-search-results-decoration {
             display: none;
+        }
+
+        /* Sidebar collapse animations and overrides */
+        #sidebar-nav.collapsed {
+            width: 76px !important;
+        }
+        #sidebar-nav.collapsed .brand-text,
+        #sidebar-nav.collapsed nav span,
+        #sidebar-nav.collapsed nav .font-mono,
+        #sidebar-nav.collapsed .session-status-card .flex-col,
+        #sidebar-nav.collapsed .logout-card-btn {
+            display: none !important;
+        }
+        #sidebar-nav.collapsed nav a,
+        #sidebar-nav.collapsed nav button {
+            justify-content: center !important;
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+        }
+        #sidebar-nav.collapsed .brand-area {
+            justify-content: center !important;
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+        }
+        #sidebar-nav.collapsed .sidebar-status-container {
+            padding: 1rem 0.5rem !important;
+        }
+        #sidebar-nav.collapsed .session-status-card {
+            justify-content: center !important;
+            padding: 0.5rem !important;
+        }
+        #sidebar-nav.collapsed .toggle-btn-icon {
+            transform: rotate(180deg);
         }
     </style>
     {% block extra_css %}{% endblock %}
@@ -802,58 +832,65 @@
 
     <!-- Left Sidebar (Hidden on mobile by default, toggled via drawer overlay) -->
     <aside id="sidebar-nav" class="hidden md:flex flex-col w-64 bg-slate-950 border-r border-slate-900 shrink-0 h-screen fixed md:sticky top-0 left-0 inset-y-0 z-50 md:z-40 shadow-2xl md:shadow-none transition-all duration-300">
+        <script>
+            // Apply sidebar state early to prevent flash
+            if (localStorage.getItem('sidebar-collapsed') === 'true') {
+                document.getElementById('sidebar-nav').classList.add('collapsed');
+            }
+        </script>
         <!-- Brand Area -->
-        <div class="p-6 border-b border-slate-900 flex items-center gap-3">
+        <div class="brand-area p-6 border-b border-slate-900 flex items-center gap-3 relative shrink-0">
             <div class="relative flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-600 text-white shadow-lg shadow-indigo-500/30 shrink-0">
                 <div class="absolute inset-0 rounded-xl bg-indigo-400/20 blur-sm animate-pulse"></div>
                 <i data-lucide="phone-call" class="w-5 h-5 relative z-10"></i>
             </div>
-            <div>
+            <div class="brand-text">
                 <h1 class="text-sm font-black text-slate-100 tracking-tight leading-none flex items-center gap-0.5">
                     WABA <span class="bg-gradient-to-r from-indigo-500 to-violet-500 bg-clip-text text-transparent">Recover</span>
                 </h1>
                 <span class="text-[9px] font-mono font-bold text-indigo-400 mt-1.5 block tracking-wider">Super Admin SaaS</span>
             </div>
+            
+            <!-- Collapse/Expand Sidebar Button (Floating on the border edge) -->
+            <button onclick="toggleSidebar()" class="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200 cursor-pointer flex items-center justify-center shadow-md z-50 hover:scale-110 transition-all" title="Toggle Sidebar">
+                <i data-lucide="chevron-left" class="w-3.5 h-3.5 toggle-btn-icon transition-transform duration-300"></i>
+            </button>
         </div>
 
         <!-- Navigation Links -->
         <nav class="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto custom-scrollbar">
             <div class="text-[9px] font-bold text-slate-500 uppercase tracking-wider px-3 mb-2 font-mono">Control Center</div>
-            <a href="{% url 'overview' %}" class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-slate-900/50 decoration-none transition-all {% if active_page == 'overview' %}bg-indigo-600/10 text-indigo-400{% else %}text-slate-400 hover:text-slate-200{% endif %}">
+            <a href="{% url 'overview' %}" title="Overview Dashboard" class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-slate-900/50 decoration-none transition-all {% if active_page == 'overview' %}bg-indigo-600/10 text-indigo-400{% else %}text-slate-400 hover:text-slate-200{% endif %}">
                 <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
                 <span>Overview Dashboard</span>
             </a>
-            <a href="{% url 'tenants' %}" class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-slate-900/50 decoration-none transition-all {% if active_page == 'tenants' %}bg-indigo-600/10 text-indigo-400{% else %}text-slate-400 hover:text-slate-200{% endif %}">
+            <a href="{% url 'tenants' %}" title="Subscribers" class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-slate-900/50 decoration-none transition-all {% if active_page == 'tenants' %}bg-indigo-600/10 text-indigo-400{% else %}text-slate-400 hover:text-slate-200{% endif %}">
                 <i data-lucide="users" class="w-4 h-4"></i>
                 <span>Subscribers</span>
             </a>
-            <a href="{% url 'history' %}" class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-slate-900/50 decoration-none transition-all {% if active_page == 'history' %}bg-indigo-600/10 text-indigo-400{% else %}text-slate-400 hover:text-slate-200{% endif %}">
+            <a href="{% url 'history' %}" title="Activity History" class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-slate-900/50 decoration-none transition-all {% if active_page == 'history' %}bg-indigo-600/10 text-indigo-400{% else %}text-slate-400 hover:text-slate-200{% endif %}">
                 <i data-lucide="history" class="w-4 h-4"></i>
                 <span>Activity History</span>
             </a>
-            <a href="{% url 'sandbox' %}" class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-slate-900/50 decoration-none transition-all {% if active_page == 'sandbox' %}bg-indigo-600/10 text-indigo-400{% else %}text-slate-400 hover:text-slate-250{% endif %}">
+            <a href="{% url 'sandbox' %}" title="Simulator Sandbox" class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-slate-900/50 decoration-none transition-all {% if active_page == 'sandbox' %}bg-indigo-600/10 text-indigo-400{% else %}text-slate-400 hover:text-slate-250{% endif %}">
                 <i data-lucide="play" class="w-4 h-4"></i>
                 <span>Simulator Sandbox</span>
             </a>
-            <a href="{% url 'settings' %}" class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-slate-900/50 decoration-none transition-all {% if active_page == 'settings' %}bg-indigo-600/10 text-indigo-400{% else %}text-slate-400 hover:text-slate-200{% endif %}">
+            <a href="{% url 'settings' %}" title="System Settings" class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-slate-900/50 decoration-none transition-all {% if active_page == 'settings' %}bg-indigo-600/10 text-indigo-400{% else %}text-slate-400 hover:text-slate-200{% endif %}">
                 <i data-lucide="settings" class="w-4 h-4"></i>
                 <span>System Settings</span>
             </a>
             
             <div class="pt-6">
                 <div class="text-[9px] font-bold text-slate-500 uppercase tracking-wider px-3 mb-2 font-mono">Help Center</div>
-                <a href="{% url 'qa' %}" class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-slate-900/50 decoration-none transition-all {% if active_page == 'qa' %}bg-indigo-600/10 text-indigo-400{% else %}text-slate-400 hover:text-slate-250{% endif %}">
+                <a href="{% url 'qa' %}" title="Q&A Help Center" class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-slate-900/50 decoration-none transition-all {% if active_page == 'qa' %}bg-indigo-600/10 text-indigo-400{% else %}text-slate-400 hover:text-slate-255{% endif %}">
                     <i data-lucide="message-square" class="w-4 h-4"></i>
                     <span>Q&A Help Center</span>
                 </a>
             </div>
             <div class="pt-6">
-                <div class="text-[9px] font-bold text-slate-500 uppercase tracking-wider px-3 mb-2 font-mono">Session</div>
-                <a href="javascript:void(0)" onclick="showLogoutModal(event)" class="btn-logout-modern flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold decoration-none transition-all cursor-pointer">
-                    <i data-lucide="power" class="w-4 h-4"></i>
-                    <span>Sign Out</span>
-                </a>
-                <button onclick="toggleTheme()" class="w-full flex items-center gap-3 px-3 py-2 mt-1.5 rounded-xl text-xs font-semibold text-slate-400 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-900/50 transition-all border border-transparent cursor-pointer">
+                <div class="text-[9px] font-bold text-slate-500 uppercase tracking-wider px-3 mb-2 font-mono">Appearance</div>
+                <button onclick="toggleTheme()" title="Toggle Light/Dark Theme" class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-400 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-900/50 transition-all border border-transparent cursor-pointer">
                     <i data-lucide="sun" class="w-4 h-4 text-amber-500 hidden dark-icon"></i>
                     <i data-lucide="moon" class="w-4 h-4 text-indigo-400 light-icon"></i>
                     <span class="theme-toggle-text">Light Mode</span>
@@ -898,6 +935,11 @@
                         <span class="session-active-label text-[8px] font-bold text-slate-500 tracking-wider uppercase mt-0.5">Session Active</span>
                     </div>
                 </div>
+                
+                <!-- Premium Sign Out Button inside Admin user section -->
+                <button onclick="showLogoutModal(event)" class="logout-card-btn w-7 h-7 rounded-xl bg-slate-950/40 border border-slate-850 hover:border-rose-900/40 hover:bg-rose-950/20 text-slate-400 hover:text-rose-400 transition-all flex items-center justify-center cursor-pointer shadow-inner shrink-0" title="Sign Out">
+                    <i data-lucide="power" class="w-3.5 h-3.5"></i>
+                </button>
             </div>
         </div>
     </aside>
@@ -1209,6 +1251,16 @@
     <!-- Initialize Lucide Icons -->
     <script>
         lucide.createIcons();
+
+        // Toggle sidebar collapse state and persist to local storage
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar-nav');
+            if (sidebar) {
+                sidebar.classList.toggle('collapsed');
+                const isCollapsed = sidebar.classList.contains('collapsed');
+                localStorage.setItem('sidebar-collapsed', isCollapsed);
+            }
+        }
 
         // Prevent aggressive browser autocomplete pre-filling on load
         window.addEventListener('load', function() {
