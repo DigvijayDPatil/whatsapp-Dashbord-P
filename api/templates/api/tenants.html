@@ -1,0 +1,759 @@
+{% extends 'api/base.html' %}
+
+{% block title %}Subscribers & Licenses - WABA Recover{% endblock %}
+
+{% block content %}
+<div class="space-y-8 animate-fade-in">
+    
+    <!-- Top Action Bar -->
+    <div class="flex justify-between items-center bg-slate-950 border border-slate-900 p-6 rounded-2xl">
+        <div>
+            <h2 class="text-md font-bold text-slate-100 tracking-tight flex items-center gap-1.5">
+                <i data-lucide="users" class="w-5 h-5 text-indigo-400"></i>
+                WABA Registered Subscribers
+            </h2>
+            <p class="text-xs text-slate-500">Provision active customer subscriptions and manage Meta API endpoint keys.</p>
+        </div>
+        <button onclick="toggleRegisterForm()" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl flex items-center gap-1.5 cursor-pointer shadow-lg shadow-indigo-950/40 hover:-translate-y-0.5 transition-all">
+            <i data-lucide="plus-circle" class="w-4 h-4"></i>
+            Register New Tenant
+        </button>
+    </div>
+
+    <!-- Register form container (toggled via button) -->
+    <div id="register-form-container" class="hidden bg-slate-950 border border-slate-900 rounded-2xl p-6 space-y-4 animate-slide-down">
+        <div class="border-b border-slate-900 pb-3 flex justify-between items-center">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-indigo-400 font-mono">Create New Subscriber License</h3>
+            <button onclick="toggleRegisterForm()" class="text-slate-500 hover:text-slate-300">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+        
+        <form method="POST" id="register-tenant-form" action="{% url 'tenants' %}" class="space-y-6" autocomplete="off">
+            {% csrf_token %}
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="space-y-1.5">
+                    <label class="text-[11px] font-semibold text-slate-400 uppercase">Business Name</label>
+                    <input type="text" name="name" required autocomplete="off" placeholder="e.g. Apex Car Rentals" class="w-full text-xs px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-slate-200 focus:outline-none focus:border-indigo-500">
+                </div>
+                <div class="space-y-1.5">
+                    <label class="text-[11px] font-semibold text-slate-400 uppercase">Billing Email</label>
+                    <input type="email" name="email" required autocomplete="off" pattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$" title="Please enter a valid email address (e.g. name@domain.com)" placeholder="e.g. billing@apex.com" class="w-full text-xs px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-slate-200 focus:outline-none focus:border-indigo-500">
+                </div>
+                <div class="space-y-1.5">
+                    <label class="text-[11px] font-semibold text-slate-400 uppercase">Initial Plan Duration</label>
+                    <select name="plan" required class="w-full text-xs px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-slate-200 focus:outline-none focus:border-indigo-500">
+                        <option value="" disabled selected>-- Select Plan --</option>
+                        <option value="1-month">1-Month License Plan</option>
+                        <option value="3-month">3-Month License Plan</option>
+                        <option value="6-month">6-Month License Plan</option>
+                        <option value="12-month">12-Month License Plan</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="border-t border-slate-900/50 pt-4 space-y-4">
+                <h4 class="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <i data-lucide="settings" class="w-3.5 h-3.5 text-slate-500"></i> WhatsApp Integration API Parameters
+                </h4>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div class="space-y-1.5 md:col-span-2">
+                        <label class="text-[10px] font-semibold text-slate-400 uppercase">Meta WABA System Access Token</label>
+                        <input type="password" name="waba_token" required autocomplete="new-password" placeholder="e.g. EAAG9zZA89ZA0IB..." class="w-full text-xs px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-slate-200 focus:outline-none focus:border-indigo-500 font-mono">
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="text-[10px] font-semibold text-slate-400 uppercase">Phone ID</label>
+                        <input type="text" name="phone_number_id" required autocomplete="off" inputmode="numeric" pattern="[0-9]+" oninput="this.value = this.value.replace(/[^0-9]/g, '')" title="Please enter numbers only" placeholder="e.g. 109552145399" class="w-full text-xs px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-slate-200 focus:outline-none focus:border-indigo-500 font-mono">
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="text-[10px] font-semibold text-slate-400 uppercase">Template Name</label>
+                        <input type="text" name="template_name" required autocomplete="off" placeholder="e.g. missed_call_recovery" class="w-full text-xs px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-slate-200 focus:outline-none focus:border-indigo-500">
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2">
+                <button type="button" onclick="toggleRegisterForm()" class="px-3 py-1.5 text-xs font-semibold text-slate-400 hover:text-slate-200 bg-slate-950 hover:bg-slate-900 rounded-lg border border-slate-800 cursor-pointer">
+                    Cancel
+                </button>
+                <button type="submit" class="px-3 py-1.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 rounded-lg cursor-pointer">
+                    Save & Generate Key
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Tenants Rows/Table Display (Modern and Premium layout) -->
+    <div id="subscribers-container">
+        {% if not tenants %}
+            <div class="p-12 text-center text-slate-500 text-xs bg-slate-955 border border-slate-900 rounded-2xl">
+                No active subscriber licenses registered. Click "Register New Tenant" to create your first client.
+            </div>
+        {% else %}
+            <!-- Desktop Row Table view (hidden on small viewports) -->
+            <div class="hidden md:block bg-slate-950 border border-slate-900 rounded-2xl overflow-hidden shadow-lg shadow-black/20">
+                <div class="overflow-x-auto custom-scrollbar -mx-6 px-6 pb-2">
+                    <table class="w-full border-collapse text-left min-w-[950px]">
+                        <thead>
+                            <tr class="border-b border-slate-900 bg-slate-900/40 text-[10px] text-slate-500 font-mono tracking-wider uppercase font-bold select-none whitespace-nowrap">
+                                <th class="p-4 pl-6">Subscriber</th>
+                                <th class="p-4">License Key & Plan</th>
+                                <th class="p-4">Status</th>
+                                <th class="p-4">Subscription Expiry</th>
+                                <th class="p-4">Webhook Activity</th>
+                                <th class="p-4 pr-6 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-900/60 text-xs">
+                            {% for tenant in tenants %}
+                            <tr class="hover:bg-slate-900/10 transition-colors group whitespace-nowrap">
+                                <!-- Subscriber Details -->
+                                <td class="p-4 pl-6">
+                                    <div class="flex items-center gap-3">
+                                        <!-- Mini Gradient Avatar circle -->
+                                        <div class="w-8 h-8 rounded-lg bg-gradient-to-tr {% if tenant.status == 'active' %}from-indigo-600 to-violet-600 shadow-indigo-500/10{% elif tenant.status == 'blocked' %}from-slate-500 to-slate-600 shadow-slate-500/5{% else %}from-rose-600 to-pink-600 shadow-rose-500/10{% endif %} flex items-center justify-center font-bold text-xs text-white uppercase shadow-md select-none shrink-0">
+                                            {{ tenant.name|slice:":1" }}
+                                        </div>
+                                        <div class="flex flex-col">
+                                            <span class="text-xs font-bold text-slate-200 group-hover:text-indigo-400 transition-colors">{{ tenant.name }}</span>
+                                            <span class="text-[10px] text-slate-500 font-mono mt-0.5">{{ tenant.email }}</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                
+                                <!-- License Key & Plan -->
+                                 <td class="p-4">
+                                     <div class="flex flex-col gap-1">
+                                         <div onclick="copyLicenseKey('{{ tenant.license_key }}', this)" class="inline-flex items-center gap-1.5 cursor-pointer group/key select-none max-w-fit" title="Click to copy license key">
+                                             <span class="font-mono text-xs text-indigo-300 font-bold group-hover/key:text-indigo-455 transition-colors">{{ tenant.license_key }}</span>
+                                             <i data-lucide="copy" class="w-3 h-3 text-slate-500 group-hover/key:text-indigo-400 transition-colors opacity-60"></i>
+                                         </div>
+                                         <div class="text-[9px] font-bold text-slate-450 font-sans tracking-wide uppercase flex items-center gap-1">
+                                             <span class="w-1 h-1 rounded-full {% if tenant.status == 'active' %}bg-indigo-500{% elif tenant.status == 'blocked' %}bg-slate-600{% else %}bg-rose-500{% endif %}"></span>
+                                             {{ tenant.plan }} Plan
+                                         </div>
+                                     </div>
+                                 </td>
+
+                                <!-- Status Badge -->
+                                <td class="p-4">
+                                    {% if tenant.status == 'active' %}
+                                        <span class="inline-flex items-center gap-1 bg-emerald-955/20 border border-emerald-900/50 text-emerald-400 px-2 py-0.5 rounded-full font-semibold font-sans text-[9px] uppercase tracking-wider">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                            Active
+                                        </span>
+                                    {% elif tenant.status == 'blocked' %}
+                                        <span class="inline-flex items-center gap-1 bg-rose-955/20 border border-rose-900/50 text-rose-400 px-2 py-0.5 rounded-full font-semibold font-sans text-[9px] uppercase tracking-wider">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                                            Blocked
+                                        </span>
+                                    {% else %}
+                                        <span class="inline-flex items-center gap-1 bg-amber-955/20 border border-amber-900/50 text-amber-450 px-2 py-0.5 rounded-full font-semibold font-sans text-[9px] uppercase tracking-wider">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                                            Expired
+                                        </span>
+                                    {% endif %}
+                                </td>
+
+                                <!-- Expiry Date -->
+                                <td class="p-4 font-mono text-slate-300 font-semibold">
+                                    {{ tenant.expires_at|date:"Y-m-d" }}
+                                </td>
+
+                                <!-- Webhook Activity -->
+                                <td class="p-4 font-mono text-xs text-slate-300">
+                                    <span class="text-indigo-400 font-bold" title="Calls count">{{ tenant.calls_count }}</span> Calls
+                                    <span class="text-slate-600 mx-0.5">/</span>
+                                    <span class="text-teal-400 font-bold" title="Messages sent">{{ tenant.messages_sent }}</span> Sent
+                                </td>
+
+                                <!-- Actions Toolbar -->
+                                <td class="p-4 pr-6 text-right">
+                                    <div class="flex items-center justify-end gap-1.5">
+                                        <button onclick="openEditModal('{{ tenant.id }}', '{{ tenant.name }}', '{{ tenant.waba_token }}', '{{ tenant.phone_number_id }}', '{{ tenant.template_name }}', '{{ tenant.language_code }}')" class="p-1.5 rounded-lg border border-slate-800 bg-slate-900 text-slate-400 hover:text-indigo-400 transition-colors hover:border-indigo-500/20 cursor-pointer" title="Edit Meta WABA Configuration">
+                                            <i data-lucide="settings" class="w-3.5 h-3.5"></i>
+                                        </button>
+                                        <a href="{% url 'tenant_toggle_block' tenant.id %}" class="p-1.5 rounded-lg border border-slate-800 bg-slate-900 transition-colors cursor-pointer hover:border-indigo-500/20 {% if tenant.status == 'blocked' %}text-amber-500 hover:text-emerald-400{% else %}text-slate-400 hover:text-rose-400{% endif %}" title="{% if tenant.status == 'blocked' %}Reactivate access{% else %}Instantly Block SaaS Access{% endif %}">
+                                            <i data-lucide="ban" class="w-3.5 h-3.5"></i>
+                                        </a>
+                                        <button onclick="openDeleteModal('{{ tenant.id }}', '{{ tenant.name|escapejs }}')" class="p-1.5 rounded-lg border border-slate-800 bg-slate-900 text-slate-400 hover:text-rose-500 transition-colors hover:border-rose-500/20 cursor-pointer" title="Permanently Delete Tenant">
+                                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Mobile Stacked Row list view (Premium Card Layout) -->
+            <div class="md:hidden space-y-4">
+                {% for tenant in tenants %}
+                <div class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-900 rounded-2xl p-5 space-y-4 shadow-sm dark:shadow-black/20 hover:border-indigo-500/20 transition-colors">
+                    <!-- Top Line: Avatar, Name, Email, and Status -->
+                    <div class="flex justify-between items-start gap-2">
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 rounded-xl bg-gradient-to-tr {% if tenant.status == 'active' %}from-indigo-500 to-violet-600 shadow-indigo-500/20{% elif tenant.status == 'blocked' %}from-slate-400 to-slate-500 shadow-slate-500/10{% else %}from-rose-500 to-pink-600 shadow-rose-500/20{% endif %} flex items-center justify-center font-bold text-sm text-white uppercase shadow-md shrink-0">
+                                {{ tenant.name|slice:":1" }}
+                            </div>
+                            <div class="flex flex-col text-left">
+                                <span class="text-xs font-bold text-slate-900 dark:text-slate-200">{{ tenant.name }}</span>
+                                <span class="text-[9px] text-slate-500 font-mono mt-0.5">{{ tenant.email }}</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Status Badge -->
+                        <div>
+                            {% if tenant.status == 'active' %}
+                                <span class="inline-flex items-center gap-1 bg-emerald-100 dark:bg-emerald-955/20 border border-emerald-200 dark:border-emerald-900/50 text-emerald-600 dark:text-emerald-400 px-2.5 py-0.5 rounded-full font-semibold font-sans text-[8px] uppercase tracking-wider">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                    Active
+                                </span>
+                            {% elif tenant.status == 'blocked' %}
+                                <span class="inline-flex items-center gap-1 bg-rose-100 dark:bg-rose-955/20 border border-rose-200 dark:border-rose-900/50 text-rose-600 dark:text-rose-400 px-2.5 py-0.5 rounded-full font-semibold font-sans text-[8px] uppercase tracking-wider">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                                    Blocked
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center gap-1 bg-amber-100 dark:bg-amber-955/20 border border-amber-200 dark:border-amber-900/50 text-amber-600 dark:text-amber-450 px-2.5 py-0.5 rounded-full font-semibold font-sans text-[8px] uppercase tracking-wider">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                                    Expired
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Details Grid: Two-Column Structured Layout -->
+                    <div class="grid grid-cols-2 gap-x-4 gap-y-3 pt-3.5 pb-1.5 border-t border-slate-100 dark:border-slate-900/40 text-[10px]">
+                        <div onclick="copyLicenseKey('{{ tenant.license_key }}', this)" class="space-y-0.5 cursor-pointer select-none" title="Click to copy license key">
+                            <span class="text-[8px] uppercase tracking-wider text-slate-400 dark:text-slate-500 block font-semibold">License Key</span>
+                            <span class="font-mono text-indigo-650 dark:text-indigo-300 font-bold hover:text-indigo-700 dark:hover:text-indigo-400 transition-colors inline-flex items-center gap-1">
+                                <span>{{ tenant.license_key }}</span>
+                                <i data-lucide="copy" class="w-3 h-3 text-slate-500 opacity-60"></i>
+                            </span>
+                        </div>
+                        <div class="space-y-0.5">
+                            <span class="text-[8px] uppercase tracking-wider text-slate-400 dark:text-slate-500 block font-semibold">Plan Duration</span>
+                            <span class="text-slate-700 dark:text-slate-300 font-semibold font-mono">{{ tenant.plan|upper }}</span>
+                        </div>
+                        <div class="space-y-0.5">
+                            <span class="text-[8px] uppercase tracking-wider text-slate-400 dark:text-slate-500 block font-semibold">Subscription Expiry</span>
+                            <span class="text-slate-700 dark:text-slate-300 font-semibold font-mono">{{ tenant.expires_at|date:"Y-m-d" }}</span>
+                        </div>
+                        <div class="space-y-0.5">
+                            <span class="text-[8px] uppercase tracking-wider text-slate-400 dark:text-slate-500 block font-semibold">Webhook Activity</span>
+                            <span class="text-slate-700 dark:text-slate-300 font-semibold font-mono">
+                                <span class="text-indigo-650 dark:text-indigo-400 font-bold">{{ tenant.calls_count }}</span> Calls <span class="text-slate-350 dark:text-slate-655">/</span> <span class="text-teal-650 dark:text-teal-400 font-bold">{{ tenant.messages_sent }}</span> Sent
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Bottom Line: Config message and action buttons -->
+                    <div class="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-900/40">
+                        <span class="text-[8px] font-mono text-slate-450 flex items-center gap-1.5">
+                            <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-500/80"></i> Config Isolation Active
+                        </span>
+                        <div class="flex items-center gap-2">
+                            <button onclick="openEditModal('{{ tenant.id }}', '{{ tenant.name }}', '{{ tenant.waba_token }}', '{{ tenant.phone_number_id }}', '{{ tenant.template_name }}', '{{ tenant.language_code }}')" class="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400 hover:text-indigo-655 dark:hover:text-indigo-400 hover:border-indigo-500/20 transition-colors cursor-pointer text-[9px] font-bold flex items-center gap-1" title="Edit Meta WABA Configuration">
+                                <i data-lucide="settings" class="w-3.5 h-3.5"></i>
+                                <span>Edit WABA</span>
+                            </button>
+                            <a href="{% url 'tenant_toggle_block' tenant.id %}" class="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 transition-colors cursor-pointer text-[9px] font-bold flex items-center gap-1 {% if tenant.status == 'blocked' %}text-emerald-600 dark:text-emerald-400 hover:border-emerald-500/20{% else %}text-slate-500 dark:text-slate-400 hover:text-rose-500 hover:border-rose-500/20{% endif %}" title="Toggle Block access">
+                                <i data-lucide="ban" class="w-3.5 h-3.5"></i>
+                                <span>{% if tenant.status == 'blocked' %}Unblock{% else %}Block{% endif %}</span>
+                            </a>
+                            <button onclick="openDeleteModal('{{ tenant.id }}', '{{ tenant.name|escapejs }}')" class="p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400 hover:text-rose-500 transition-colors hover:border-rose-500/20 cursor-pointer" title="Permanently Delete Tenant">
+                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block modals %}
+<!-- Edit Tenant Overlay Modal -->
+<div id="edit-tenant-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-premium hidden animate-fade-in">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-xl w-full p-6 space-y-4 shadow-2xl relative">
+        <button onclick="closeEditModal()" class="absolute top-4 right-4 text-slate-500 hover:text-slate-300 cursor-pointer">
+            <i data-lucide="x" class="w-4.5 h-4.5"></i>
+        </button>
+
+        <div class="space-y-1.5 border-b border-slate-800 pb-3">
+            <h4 class="text-sm font-bold text-indigo-400 uppercase tracking-wider font-mono flex items-center gap-1.5">
+                <i data-lucide="settings" class="w-4.5 h-4.5"></i> Edit WABA Credentials
+            </h4>
+            <p class="text-xs text-slate-500">Configure Meta Cloud API endpoints for <span id="edit-tenant-name" class="font-bold text-slate-300"></span></p>
+        </div>
+
+        <form method="POST" id="edit-tenant-form" class="space-y-4 text-xs" autocomplete="off">
+            {% csrf_token %}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div class="space-y-1">
+                    <label class="text-[10px] uppercase font-bold text-slate-500">Meta System User Token</label>
+                    <div class="relative flex items-center">
+                        <input type="password" id="edit-waba-token" name="waba_token" autocomplete="new-password" class="w-full bg-slate-950 border border-slate-800 rounded pl-2.5 pr-20 py-1.5 font-mono text-slate-300 focus:outline-none focus:border-indigo-500 text-xs" placeholder="Secret Access Token (EAAG...)">
+                        <div class="absolute inset-y-0 right-0 flex items-center pr-1.5 gap-1">
+                            <button type="button" onclick="toggleTokenVisibility()" class="p-1 text-slate-500 hover:text-slate-300 transition-colors cursor-pointer" title="Toggle visibility">
+                                <i data-lucide="eye" id="toggle-eye-icon" class="w-4 h-4"></i>
+                            </button>
+                            <button type="button" onclick="copyTokenFromModal()" class="p-1 text-slate-500 hover:text-slate-300 transition-colors cursor-pointer" title="Copy Token">
+                                <i data-lucide="copy" id="toggle-copy-icon" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="space-y-1">
+                    <label class="text-[10px] uppercase font-bold text-slate-500">Phone Number ID</label>
+                    <input type="text" id="edit-phone-id" name="phone_number_id" autocomplete="off" inputmode="numeric" pattern="[0-9]+" oninput="this.value = this.value.replace(/[^0-9]/g, '')" title="Please enter numbers only" class="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 font-mono text-slate-300 focus:outline-none focus:border-indigo-500" placeholder="e.g. 109552145399">
+                </div>
+                <div class="space-y-1">
+                    <label class="text-[10px] uppercase font-bold text-slate-500">Approved Template Name</label>
+                    <input type="text" id="edit-template-name" name="template_name" autocomplete="off" class="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-slate-300 focus:outline-none focus:border-indigo-500">
+                </div>
+                <div class="space-y-1">
+                    <label class="text-[10px] uppercase font-bold text-slate-500">Language Code</label>
+                    <input type="text" id="edit-language-code" name="language_code" autocomplete="off" class="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-slate-300 focus:outline-none focus:border-indigo-500">
+                </div>
+            </div>
+            <div class="flex justify-end gap-2 pt-3 border-t border-slate-800">
+                <button type="button" onclick="closeEditModal()" class="px-3 py-1.5 bg-slate-950 border border-slate-800 hover:bg-slate-900 rounded font-semibold text-slate-400 cursor-pointer">
+                    Cancel
+                </button>
+                <button type="submit" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded font-semibold cursor-pointer flex items-center gap-1">
+                    <i data-lucide="check" class="w-3.5 h-3.5"></i> Save Credentials
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Delete Tenant Overlay Confirm Modal (Premium Design) -->
+<div id="delete-tenant-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 animate-fade-in">
+    <!-- Backdrop Blur overlay with dark tint -->
+    <div class="absolute inset-0 bg-slate-955/80 backdrop-blur-premium transition-all duration-300" onclick="closeDeleteModal()"></div>
+    
+    <div class="relative w-full max-w-sm bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl z-10">
+        
+        <!-- Confirmation Form State -->
+        <div id="delete-form-state" class="space-y-5 text-center">
+            {% csrf_token %}
+            <!-- Close button -->
+            <button onclick="closeDeleteModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-200 cursor-pointer">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+
+            <!-- Circular Red Icon at the top matching reference with glowing pulse -->
+            <div class="relative mx-auto w-16 h-16 rounded-full bg-rose-500/10 border border-rose-500/25 flex items-center justify-center text-rose-500 shadow-lg shadow-rose-500/10 shrink-0">
+                <div class="absolute inset-0 rounded-full bg-rose-500/20 blur-md animate-pulse"></div>
+                <div class="absolute inset-1.5 rounded-full border border-rose-500/30"></div>
+                <i data-lucide="trash-2" class="w-7 h-7 relative z-10"></i>
+            </div>
+
+            <div class="space-y-2">
+                <h3 class="text-sm font-bold text-slate-100 uppercase tracking-widest font-mono">
+                    Confirm Deletion
+                </h3>
+                <p class="text-xs text-slate-400 leading-relaxed font-sans px-2">
+                    Are you sure you want to permanently delete tenant <span id="delete-tenant-name" class="font-extrabold text-slate-200"></span>? This action will purge all settings and historical call logs.
+                </p>
+            </div>
+
+            <!-- Password verification field -->
+            <div class="w-full space-y-1.5 text-left pt-1">
+                <label class="text-[10px] font-bold text-slate-400 tracking-wider uppercase block">
+                    Verify Administrator Password
+                </label>
+                <input type="password" id="delete-password" placeholder="••••••••" autocomplete="new-password" class="w-full text-xs px-4 py-3 bg-slate-900 border border-slate-800 rounded-xl text-slate-100 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-indigo-500 transition-all font-mono">
+                <span id="delete-error" class="hidden text-[10px] font-bold text-rose-500 block">
+                    Incorrect administrator password.
+                </span>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="grid grid-cols-2 gap-3 w-full pt-1">
+                <button type="button" onclick="closeDeleteModal()" class="w-full py-3 bg-slate-950 border border-slate-800 text-slate-400 font-bold rounded-xl text-xs hover:bg-slate-900 transition-all cursor-pointer">
+                    Cancel
+                </button>
+                <button type="button" id="delete-confirm-btn" class="w-full py-3 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl text-xs transition-all cursor-pointer shadow-lg shadow-rose-950/20 flex items-center justify-center">
+                    Delete Tenant
+                </button>
+            </div>
+        </div>
+
+        <!-- Deleting Loader State (Premium Animation) -->
+        <div id="delete-loading-state" class="hidden space-y-5 text-center py-2">
+            <!-- Pulsing/Rotating Loader Icon container -->
+            <div class="relative w-16 h-16 mx-auto flex items-center justify-center">
+                <!-- Circular Track Background -->
+                <div class="absolute inset-0 rounded-full border-2 border-slate-100 dark:border-slate-800/40"></div>
+                <!-- Spinning Spinner Arc Ring -->
+                <div class="absolute inset-0 rounded-full border-2 border-t-rose-500 border-r-transparent border-b-transparent border-l-transparent animate-spin"></div>
+                
+                <!-- Inner circular icon (Stable center, pulsing animation) -->
+                <div class="w-12 h-12 rounded-full bg-rose-50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/30 flex items-center justify-center text-rose-500 animate-pulse">
+                    <i data-lucide="trash-2" class="w-5 h-5"></i>
+                </div>
+            </div>
+
+            <div class="space-y-1">
+                <h3 class="text-sm font-black text-slate-850 dark:text-slate-100 uppercase tracking-wider font-mono">
+                    DELETING SUBSCRIBER REGISTRY
+                </h3>
+                <p id="delete-loading-step" class="text-[10px] font-bold text-rose-500 uppercase tracking-widest font-mono">
+                    Initializing purge sequence...
+                </p>
+            </div>
+
+            <!-- Mini-Terminal for Dynamic Logs Purging (Highly Premium) -->
+            <div class="w-full h-24 bg-slate-950 border border-slate-900 rounded-xl p-3 overflow-y-auto font-mono text-[9px] text-left leading-relaxed flex flex-col justify-end select-none custom-scrollbar shadow-inner" style="background-color: #030712 !important; border-color: #111827 !important;">
+                <div id="delete-terminal-lines" class="space-y-1 text-slate-400">
+                    <!-- Dynamic deletion feed lines will scroll here -->
+                </div>
+            </div>
+
+            <!-- Glowing Progress Bar -->
+            <div class="w-full h-1 bg-slate-900 rounded-full overflow-hidden relative shadow-inner">
+                <div id="delete-progress-bar" class="absolute left-0 top-0 bottom-0 bg-gradient-to-r from-rose-500 to-rose-600 shadow-[0_0_8px_rgba(244,63,94,0.5)] transition-all duration-300 w-0"></div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function toggleRegisterForm() {
+        const container = document.getElementById('register-form-container');
+        const form = document.getElementById('register-tenant-form');
+        
+        // Reset inputs when form modal is being closed
+        if (form && !container.classList.contains('hidden')) {
+            form.reset();
+        }
+        
+        container.classList.toggle('hidden');
+    }
+
+    function openEditModal(id, name, token, phoneId, template, lang) {
+        document.getElementById('edit-tenant-name').textContent = name;
+        document.getElementById('edit-waba-token').value = token;
+        document.getElementById('edit-phone-id').value = phoneId;
+        document.getElementById('edit-template-name').value = template;
+        document.getElementById('edit-language-code').value = lang;
+        
+        const form = document.getElementById('edit-tenant-form');
+        form.action = `/tenants/edit-waba/${id}/`;
+        
+        document.getElementById('edit-tenant-modal').classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeEditModal() {
+        document.getElementById('edit-tenant-modal').classList.add('hidden');
+        document.body.style.overflow = '';
+        
+        // Reset token input type to password on close
+        const tokenInput = document.getElementById('edit-waba-token');
+        if (tokenInput) {
+            tokenInput.type = 'password';
+        }
+        const eyeIcon = document.getElementById('toggle-eye-icon');
+        if (eyeIcon) {
+            eyeIcon.setAttribute('data-lucide', 'eye');
+        }
+        if (window.lucide) {
+            lucide.createIcons();
+        }
+    }
+
+    let activeDeleteTenantId = null;
+
+    function openDeleteModal(id, name) {
+        activeDeleteTenantId = id;
+        document.getElementById('delete-tenant-name').textContent = name;
+        document.getElementById('delete-password').value = '';
+        document.getElementById('delete-error').classList.add('hidden');
+        
+        // Reset state classes
+        document.getElementById('delete-form-state').classList.remove('hidden');
+        document.getElementById('delete-loading-state').classList.add('hidden');
+        
+        document.getElementById('delete-tenant-modal').classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeDeleteModal() {
+        activeDeleteTenantId = null;
+        document.getElementById('delete-tenant-modal').classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+
+    // Bind delete confirmation submission directly
+    document.getElementById('delete-confirm-btn').addEventListener('click', function() {
+        if (!activeDeleteTenantId) return;
+        const password = document.getElementById('delete-password').value;
+        const errorEl = document.getElementById('delete-error');
+        const csrfToken = document.querySelector('#delete-tenant-modal [name="csrfmiddlewaretoken"]').value;
+
+        if (!password || password.trim() === '') {
+            errorEl.textContent = 'Password verification failed: Password cannot be empty.';
+            errorEl.classList.remove('hidden');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('confirm_password', password);
+        formData.append('csrfmiddlewaretoken', csrfToken);
+
+        fetch(`/tenants/delete/${activeDeleteTenantId}/`, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Switch states
+                const formState = document.getElementById('delete-form-state');
+                const loadingState = document.getElementById('delete-loading-state');
+                const progressBar = document.getElementById('delete-progress-bar');
+                const loadingStep = document.getElementById('delete-loading-step');
+                const linesContainer = document.getElementById('delete-terminal-lines');
+                
+                formState.classList.add('hidden');
+                loadingState.classList.remove('hidden');
+                if (window.lucide) {
+                    lucide.createIcons();
+                }
+
+                // Progress Bar Animation (Continuous Loop)
+                progressBar.style.width = '0%';
+                progressBar.classList.remove('bg-emerald-500');
+                progressBar.classList.add('bg-rose-500');
+                
+                let currentProgress = 0;
+                const progressInterval = setInterval(() => {
+                    if (currentProgress < 95) {
+                        currentProgress += 1.5;
+                        progressBar.style.width = currentProgress + '%';
+                        
+                        // Update step labels
+                        if (currentProgress < 20) {
+                            loadingStep.textContent = 'Initializing purge sequence...';
+                        } else if (currentProgress < 50) {
+                            loadingStep.textContent = 'Clearing tenant metadata...';
+                        } else if (currentProgress < 80) {
+                            loadingStep.textContent = 'Purging call logs history...';
+                        } else {
+                            loadingStep.textContent = 'Finalizing index rebuild...';
+                        }
+                    }
+                }, 20);
+
+                // Scrolling terminal lines
+                linesContainer.innerHTML = '';
+                const terminalLines = [
+                    'SYSTEM: Initiating tenant record removal...',
+                    'AUTH: Verification signature validated.',
+                    'WIPE: Purging configuration credentials... OK',
+                    'WIPE: Dropping subscriber metadata node... OK',
+                    'DELETE: Cascade-wiping call logs history... OK',
+                    'SYSTEM: Rebuilding isolation node indexes... OK',
+                    'SUCCESS: Tenant deleted successfully.'
+                ];
+
+                let lineIdx = 0;
+                function printTerminalLines() {
+                    if (lineIdx < terminalLines.length) {
+                        const line = document.createElement('div');
+                        let styledText = terminalLines[lineIdx];
+                        
+                        // Customize label colors in terminal feed
+                        styledText = styledText
+                            .replace('SUCCESS:', '<span class="text-emerald-400 font-bold">SUCCESS:</span>')
+                            .replace('SYSTEM:', '<span class="text-indigo-400 font-bold">SYSTEM:</span>')
+                            .replace('AUTH:', '<span class="text-violet-400 font-bold">AUTH:</span>')
+                            .replace('WIPE:', '<span class="text-rose-450 font-bold">WIPE:</span>')
+                            .replace('DELETE:', '<span class="text-rose-450 font-bold">DELETE:</span>');
+                            
+                        line.innerHTML = `&gt; ${styledText}`;
+                        linesContainer.appendChild(line);
+                        
+                        // Keep scrolled to bottom
+                        linesContainer.parentElement.scrollTop = linesContainer.parentElement.scrollHeight;
+                        
+                        lineIdx++;
+                        const delay = 1000 / terminalLines.length;
+                        setTimeout(printTerminalLines, delay);
+                    }
+                }
+                setTimeout(printTerminalLines, 100);
+
+                // Wait for animation to finish then reload
+                setTimeout(() => {
+                    clearInterval(progressInterval);
+                    progressBar.style.width = '100%';
+                    progressBar.classList.remove('bg-rose-500');
+                    progressBar.classList.add('bg-emerald-500');
+                    loadingStep.textContent = 'DELETED SUCCESSFULLY. RELOADING...';
+                    
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 400);
+                }, 1200);
+
+            } else {
+                errorEl.textContent = data.message || 'Incorrect administrator password.';
+                errorEl.classList.remove('hidden');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            errorEl.textContent = 'A system communication error occurred.';
+            errorEl.classList.remove('hidden');
+        });
+    });
+
+    document.getElementById('delete-password').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            document.getElementById('delete-confirm-btn').click();
+        }
+    });
+
+    function toggleTokenVisibility() {
+        const tokenInput = document.getElementById('edit-waba-token');
+        const eyeIcon = document.getElementById('toggle-eye-icon');
+        if (tokenInput.type === 'password') {
+            tokenInput.type = 'text';
+            eyeIcon.setAttribute('data-lucide', 'eye-off');
+        } else {
+            tokenInput.type = 'password';
+            eyeIcon.setAttribute('data-lucide', 'eye');
+        }
+        if (window.lucide) {
+            lucide.createIcons();
+        }
+    }
+
+    function copyTokenFromModal() {
+        const tokenInput = document.getElementById('edit-waba-token');
+        const copyIcon = document.getElementById('toggle-copy-icon');
+        
+        navigator.clipboard.writeText(tokenInput.value).then(() => {
+            copyIcon.setAttribute('data-lucide', 'check');
+            copyIcon.classList.add('text-emerald-500');
+            if (window.lucide) {
+                lucide.createIcons();
+            }
+            
+            setTimeout(() => {
+                copyIcon.setAttribute('data-lucide', 'copy');
+                copyIcon.classList.remove('text-emerald-500');
+                if (window.lucide) {
+                    lucide.createIcons();
+                }
+            }, 1500);
+        }).catch(err => {
+            console.error('Failed to copy token: ', err);
+        });
+    }
+
+    function copyLicenseKey(key, element) {
+        navigator.clipboard.writeText(key).then(() => {
+            const keyText = element.querySelector('span');
+            const iconEl = element.querySelector('svg') || element.querySelector('i');
+            
+            if (!keyText) return;
+            
+            const originalText = keyText.textContent;
+            const originalColorClass = keyText.className;
+            
+            // 1. Update text to show confirmation
+            keyText.textContent = 'Copied!';
+            keyText.className = 'font-mono text-xs text-emerald-400 font-bold transition-all';
+            
+            // 2. Update icon to show checkmark
+            let originalSvgHTML = '';
+            if (iconEl) {
+                originalSvgHTML = iconEl.outerHTML;
+                iconEl.outerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check text-emerald-500 animate-pulse"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+            }
+            
+            setTimeout(() => {
+                // Restore text
+                keyText.textContent = originalText;
+                keyText.className = originalColorClass;
+                
+                // Restore icon
+                const newCheckIcon = element.querySelector('.lucide-check');
+                if (newCheckIcon && originalSvgHTML) {
+                    newCheckIcon.outerHTML = originalSvgHTML;
+                }
+                
+                if (window.lucide) {
+                    lucide.createIcons();
+                }
+            }, 1500);
+        }).catch(err => {
+            console.error('Failed to copy license key: ', err);
+        });
+    }
+
+    // Real-time automatic subscriber activity count updater
+    let lastEventTimestamp = "";
+    
+    fetch("{% url 'latest_status' %}")
+        .then(res => res.json())
+        .then(data => {
+            lastEventTimestamp = data.event_timestamp;
+        })
+        .catch(() => {});
+
+    function pollForUpdates() {
+        // Skip updates if editing or registering forms are open to protect user inputs
+        const isEditOpen = !document.getElementById('edit-tenant-modal').classList.contains('hidden');
+        const isRegisterOpen = !document.getElementById('register-form-container').classList.contains('hidden');
+        if (isEditOpen || isRegisterOpen) return;
+
+        fetch("{% url 'latest_status' %}")
+            .then(res => res.json())
+            .then(data => {
+                if (data.event_timestamp && data.event_timestamp !== lastEventTimestamp) {
+                    lastEventTimestamp = data.event_timestamp;
+                    
+                    fetch(window.location.href)
+                        .then(res => res.text())
+                        .then(html => {
+                            const parser = new DOMParser();
+                            const doc = parser.parseFromString(html, 'text/html');
+                            
+                            const newContainer = doc.getElementById('subscribers-container');
+                            const currentContainer = document.getElementById('subscribers-container');
+                            if (newContainer && currentContainer) {
+                                currentContainer.innerHTML = newContainer.innerHTML;
+                                if (typeof lucide !== 'undefined') {
+                                    lucide.createIcons();
+                                }
+                            }
+                        });
+                }
+            })
+            .catch(() => {});
+    }
+
+    // Poll every 2 seconds
+    setInterval(pollForUpdates, 2000);
+</script>
+{% endblock %}

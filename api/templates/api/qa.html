@@ -1,0 +1,348 @@
+{% extends 'api/base.html' %}
+
+{% block title %}Q&A Help Center - WABA Recover{% endblock %}
+
+{% block content %}
+<style>
+    /* Light mode FAQ Category filter pills styling fixes */
+    html.light-mode .cat-pill {
+        background-color: #ffffff !important;
+        border-color: #e2e8f0 !important;
+        color: #64748b !important;
+    }
+    html.light-mode .cat-pill:hover {
+        background-color: #f8fafc !important;
+        border-color: #cbd5e1 !important;
+        color: #0f172a !important;
+    }
+    /* Keep active category pill colors vibrant in light mode */
+    html.light-mode .cat-pill.bg-indigo-500\/10 {
+        background-color: rgba(99, 102, 241, 0.1) !important;
+        border-color: rgba(99, 102, 241, 0.3) !important;
+        color: #4f46e5 !important;
+    }
+    html.light-mode .cat-pill.bg-emerald-500\/10 {
+        background-color: rgba(16, 185, 129, 0.1) !important;
+        border-color: rgba(16, 185, 129, 0.3) !important;
+        color: #059669 !important;
+    }
+    html.light-mode .cat-pill.bg-violet-500\/10 {
+        background-color: rgba(139, 92, 246, 0.1) !important;
+        border-color: rgba(139, 92, 246, 0.3) !important;
+        color: #7c3aed !important;
+    }
+    html.light-mode .cat-pill.bg-rose-500\/10 {
+        background-color: rgba(244, 63, 94, 0.1) !important;
+        border-color: rgba(244, 63, 94, 0.3) !important;
+        color: #dc2626 !important;
+    }
+</style>
+<div class="space-y-8 animate-fade-in text-xs">
+    
+    <!-- Top Action Bar -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-slate-955 border border-slate-900 p-6 rounded-2xl">
+        <div class="space-y-1">
+            <h2 class="text-md font-bold text-slate-100 tracking-tight flex items-center gap-2">
+                <div class="p-1.5 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 rounded-lg flex items-center justify-center shrink-0">
+                    <i data-lucide="message-square" class="w-4 h-4"></i>
+                </div>
+                <span>Q&A Knowledge Base</span>
+            </h2>
+            <p class="text-xs text-slate-500">Frequently asked questions and detailed answers regarding the Lead Recovery Dashboard system architecture.</p>
+        </div>
+        
+        <!-- Search Input -->
+        <div class="relative w-full md:w-80 shrink-0">
+            <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 pointer-events-none"></i>
+            <input type="search" id="faq-search" oninput="filterSearch()" placeholder="Search knowledge base..." autocomplete="off" class="w-full text-xs pl-8 pr-8 py-2 bg-slate-950 border border-slate-800 rounded-lg text-slate-200 focus:outline-none focus:border-indigo-500">
+            <!-- Shortcut indicator -->
+            <div class="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none select-none">
+                <kbd class="hidden sm:inline-flex items-center justify-center px-1.5 py-0.5 text-[8px] font-mono font-bold text-slate-500 bg-slate-900 border border-slate-800 rounded-md">/</kbd>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-900 pb-4">
+        <!-- Category Filter Pills (Premium Glow Dots Layout) -->
+        <div class="flex flex-wrap gap-2.5">
+            <!-- All Questions -->
+            <button onclick="filterCategory('all')" id="cat-all" class="cat-pill px-4 py-2 bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 rounded-xl text-[11px] font-bold transition-all duration-300 ease-out cursor-pointer flex items-center gap-2 shadow-sm">
+                <span class="cat-dot w-1.5 h-1.5 rounded-full bg-indigo-500 shadow-sm shadow-indigo-500/50"></span>
+                <span>All Questions</span>
+            </button>
+            <!-- General -->
+            <button onclick="filterCategory('general')" id="cat-general" class="cat-pill px-4 py-2 bg-slate-955 border border-slate-900 text-slate-450 hover:text-slate-200 rounded-xl text-[11px] font-semibold transition-all duration-300 ease-out cursor-pointer flex items-center gap-2 shadow-sm">
+                <span class="cat-dot w-1.5 h-1.5 rounded-full bg-slate-700 transition-colors"></span>
+                <span>General</span>
+            </button>
+            <!-- Webhooks & SLA -->
+            <button onclick="filterCategory('webhook')" id="cat-webhook" class="cat-pill px-4 py-2 bg-slate-955 border border-slate-900 text-slate-450 hover:text-slate-200 rounded-xl text-[11px] font-semibold transition-all duration-300 ease-out cursor-pointer flex items-center gap-2 shadow-sm">
+                <span class="cat-dot w-1.5 h-1.5 rounded-full bg-slate-700 transition-colors"></span>
+                <span>Webhooks & SLA</span>
+            </button>
+            <!-- Troubleshooting -->
+            <button onclick="filterCategory('troubleshooting')" id="cat-troubleshooting" class="cat-pill px-4 py-2 bg-slate-955 border border-slate-900 text-slate-450 hover:text-slate-200 rounded-xl text-[11px] font-semibold transition-all duration-300 ease-out cursor-pointer flex items-center gap-2 shadow-sm">
+                <span class="cat-dot w-1.5 h-1.5 rounded-full bg-slate-700 transition-colors"></span>
+                <span>Troubleshooting</span>
+            </button>
+        </div>
+        
+        <!-- Results Counter & Status -->
+        <div class="flex items-center gap-3">
+            <div id="results-count" class="text-[10px] text-slate-500 font-mono">
+                Showing all 7 questions
+            </div>
+            <span class="h-3 w-px bg-slate-900/60 hidden sm:inline-block"></span>
+            <div class="hidden sm:flex items-center gap-1.5 text-[10px] text-emerald-400 font-mono font-semibold">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                API Webhook: Active
+            </div>
+        </div>
+    </div>
+
+    <!-- Main FAQ Layout -->
+    <div class="space-y-4">
+        
+        <!-- Empty State -->
+        <div id="faq-empty-state" class="hidden p-10 text-center bg-slate-950 border border-slate-900 rounded-2xl space-y-3">
+            <div class="p-3 bg-slate-900 border border-slate-800 text-slate-500 rounded-2xl w-fit mx-auto">
+                <i data-lucide="search" class="w-6 h-6"></i>
+            </div>
+            <h4 class="text-slate-200 font-bold text-sm">No results found</h4>
+            <p class="text-slate-400 text-xs font-sans max-w-md mx-auto">We couldn't find any articles matching your search query. Try checking for typos or searching a different term.</p>
+        </div>
+
+        <!-- FAQ Item 1 -->
+        <div class="faq-item bg-slate-950 border border-slate-900 hover:border-slate-800 rounded-2xl p-5 transition-all duration-300 shadow-sm" data-category="general" data-search-content="What is the purpose of this WABA Lead Recovery Dashboard? It serves as a private routing node for businesses to automatically send recovery WhatsApp template messages to clients who missed a call. It acts as a super-admin console to manage tenant API tokens, track SLA metrics, and maintain isolated transaction logs.">
+            <button onclick="toggleAccordion('faq-1')" class="w-full flex items-center justify-between gap-4 text-left group">
+                <div class="flex items-center gap-3">
+                    <span class="px-2 py-0.5 bg-indigo-500/10 text-indigo-400 text-[9px] font-mono font-bold rounded-md uppercase tracking-wider shrink-0">General</span>
+                    <h4 class="font-bold text-slate-200 group-hover:text-indigo-400 text-sm leading-snug transition-colors">What is the purpose of this WABA Lead Recovery Dashboard?</h4>
+                </div>
+                <i data-lucide="chevron-down" id="chevron-faq-1" class="w-4 h-4 text-slate-400 group-hover:text-indigo-400 transition-all duration-300 shrink-0"></i>
+            </button>
+            <div id="answer-faq-1" class="hidden mt-4 pt-4 border-t border-slate-900/60 text-slate-400 font-sans leading-relaxed text-xs">
+                It serves as a private routing node for businesses to automatically send recovery WhatsApp template messages to clients who missed a call. It acts as a super-admin console to manage tenant API tokens, track SLA metrics, and maintain isolated transaction logs.
+            </div>
+        </div>
+
+        <!-- FAQ Item 2 -->
+        <div class="faq-item bg-slate-950 border border-slate-900 hover:border-slate-800 rounded-2xl p-5 transition-all duration-300 shadow-sm" data-category="general" data-search-content="What are the different subscriber license plans? Licenses can be assigned on a subscription basis for 1-month, 3-month, 6-month, or 12-month tiers. When a plan expires, its status changes to expired and any incoming calls are blocked until extended.">
+            <button onclick="toggleAccordion('faq-2')" class="w-full flex items-center justify-between gap-4 text-left group">
+                <div class="flex items-center gap-3">
+                    <span class="px-2 py-0.5 bg-indigo-500/10 text-indigo-400 text-[9px] font-mono font-bold rounded-md uppercase tracking-wider shrink-0">General</span>
+                    <h4 class="font-bold text-slate-200 group-hover:text-indigo-400 text-sm leading-snug transition-colors">What are the different subscriber license plans?</h4>
+                </div>
+                <i data-lucide="chevron-down" id="chevron-faq-2" class="w-4 h-4 text-slate-400 group-hover:text-indigo-400 transition-all duration-300 shrink-0"></i>
+            </button>
+            <div id="answer-faq-2" class="hidden mt-4 pt-4 border-t border-slate-900/60 text-slate-400 font-sans leading-relaxed text-xs">
+                Licenses can be assigned on a subscription basis for <strong>1-month</strong>, <strong>3-month</strong>, <strong>6-month</strong>, or <strong>12-month</strong> tiers. When a plan expires, its status changes to <code>expired</code> and any incoming calls are blocked until extended.
+            </div>
+        </div>
+
+        <!-- FAQ Item 3 -->
+        <div class="faq-item bg-slate-950 border border-slate-900 hover:border-slate-800 rounded-2xl p-5 transition-all duration-300 shadow-sm" data-category="webhook" data-search-content="How does the missed call trigger process work? External systems (such as a calling app on a mobile device) POST a payload containing the tenant's licenseKey and callerPhone to our API webhook. The server validates the license, processes the number format, and immediately dispatches the WhatsApp template request to Meta's Cloud API.">
+            <button onclick="toggleAccordion('faq-3')" class="w-full flex items-center justify-between gap-4 text-left group">
+                <div class="flex items-center gap-3">
+                    <span class="px-2 py-0.5 bg-sky-500/10 text-sky-400 text-[9px] font-mono font-bold rounded-md uppercase tracking-wider shrink-0">Webhooks</span>
+                    <h4 class="font-bold text-slate-200 group-hover:text-indigo-400 text-sm leading-snug transition-colors">How does the missed call trigger process work?</h4>
+                </div>
+                <i data-lucide="chevron-down" id="chevron-faq-3" class="w-4 h-4 text-slate-400 group-hover:text-indigo-400 transition-all duration-300 shrink-0"></i>
+            </button>
+            <div id="answer-faq-3" class="hidden mt-4 pt-4 border-t border-slate-900/60 text-slate-400 font-sans leading-relaxed text-xs">
+                External systems (such as a calling app on a mobile device) POST a payload containing the tenant's <code>licenseKey</code> and <code>callerPhone</code> to our API webhook. The server validates the license, processes the number format, and immediately dispatches the WhatsApp template request to Meta's Cloud API.
+            </div>
+        </div>
+
+        <!-- FAQ Item 4 -->
+        <div class="faq-item bg-slate-950 border border-slate-900 hover:border-slate-800 rounded-2xl p-5 transition-all duration-300 shadow-sm" data-category="webhook" data-search-content="What is the 3-second SLA (Service Level Agreement)? To maximize lead retention, recovery messages must be delivered instantly. The dashboard tracks the transaction response time. If a template trigger takes less than 3000ms (3 seconds) to roundtrip through the Meta Graph API, it passes the SLA threshold.">
+            <button onclick="toggleAccordion('faq-4')" class="w-full flex items-center justify-between gap-4 text-left group">
+                <div class="flex items-center gap-3">
+                    <span class="px-2 py-0.5 bg-sky-500/10 text-sky-400 text-[9px] font-mono font-bold rounded-md uppercase tracking-wider shrink-0">Webhooks</span>
+                    <h4 class="font-bold text-slate-200 group-hover:text-indigo-400 text-sm leading-snug transition-colors">What is the 3-second SLA (Service Level Agreement)?</h4>
+                </div>
+                <i data-lucide="chevron-down" id="chevron-faq-4" class="w-4 h-4 text-slate-400 group-hover:text-indigo-400 transition-all duration-300 shrink-0"></i>
+            </button>
+            <div id="answer-faq-4" class="hidden mt-4 pt-4 border-t border-slate-900/60 text-slate-400 font-sans leading-relaxed text-xs">
+                To maximize lead retention, recovery messages must be delivered instantly. The dashboard tracks the transaction response time. If a template trigger takes less than 3000ms (3 seconds) to roundtrip through the Meta Graph API, it passes the SLA threshold.
+            </div>
+        </div>
+
+        <!-- FAQ Item 5 -->
+        <div class="faq-item bg-slate-950 border border-slate-900 hover:border-slate-800 rounded-2xl p-5 transition-all duration-300 shadow-sm" data-category="webhook" data-search-content="How does the Meta Webhook Verification work? Meta sends validation requests via GET to verify our status webhooks. The server answers the hub challenge automatically if the verification token matches the configured walstar_verify_token.">
+            <button onclick="toggleAccordion('faq-5')" class="w-full flex items-center justify-between gap-4 text-left group">
+                <div class="flex items-center gap-3">
+                    <span class="px-2 py-0.5 bg-sky-500/10 text-sky-400 text-[9px] font-mono font-bold rounded-md uppercase tracking-wider shrink-0">Webhooks</span>
+                    <h4 class="font-bold text-slate-200 group-hover:text-indigo-400 text-sm leading-snug transition-colors">How does the Meta Webhook Verification work?</h4>
+                </div>
+                <i data-lucide="chevron-down" id="chevron-faq-5" class="w-4 h-4 text-slate-400 group-hover:text-indigo-400 transition-all duration-300 shrink-0"></i>
+            </button>
+            <div id="answer-faq-5" class="hidden mt-4 pt-4 border-t border-slate-900/60 text-slate-400 font-sans leading-relaxed text-xs">
+                Meta sends validation requests via GET to verify our status webhooks. The server answers the hub challenge automatically if the verification token matches the configured <code>walstar_verify_token</code>.
+            </div>
+        </div>
+
+        <!-- FAQ Item 6 -->
+        <div class="faq-item bg-slate-950 border border-slate-900 hover:border-slate-800 rounded-2xl p-5 transition-all duration-300 shadow-sm" data-category="troubleshooting" data-search-content="What is the difference between failed and simulated logs? simulated: Occurs when a developer uses a test token. The system logs a success event but skips hitting Meta's API to preserve messaging credits. failed: Occurs when a real Meta transmission fails. The system logs the response code and the exact reason (e.g. invalid credentials) in the transaction database.">
+            <button onclick="toggleAccordion('faq-6')" class="w-full flex items-center justify-between gap-4 text-left group">
+                <div class="flex items-center gap-3">
+                    <span class="px-2 py-0.5 bg-rose-500/10 text-rose-455 text-[9px] font-mono font-bold rounded-md uppercase tracking-wider shrink-0">Troubleshooting</span>
+                    <h4 class="font-bold text-slate-200 group-hover:text-indigo-400 text-sm leading-snug transition-colors">What is the difference between "failed" and "simulated" logs?</h4>
+                </div>
+                <i data-lucide="chevron-down" id="chevron-faq-6" class="w-4 h-4 text-slate-400 group-hover:text-indigo-400 transition-all duration-300 shrink-0"></i>
+            </button>
+            <div id="answer-faq-6" class="hidden mt-4 pt-4 border-t border-slate-900/60 text-slate-400 font-sans leading-relaxed text-xs">
+                <ul class="list-disc pl-4 space-y-1">
+                    <li><code>simulated</code>: Occurs when a developer uses a test token. The system logs a success event but skips hitting Meta's API to preserve messaging credits.</li>
+                    <li><code>failed</code>: Occurs when a real Meta transmission fails. The system logs the response code and the exact reason (e.g. invalid credentials) in the transaction database.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- FAQ Item 7 -->
+        <div class="faq-item bg-slate-950 border border-slate-900 hover:border-slate-800 rounded-2xl p-5 transition-all duration-300 shadow-sm" data-category="troubleshooting" data-search-content="Why does Meta return Error Code 132000 (parameter mismatch)? This happens if the payload sends template body parameters (such as the customer's name) to a template that was registered on Meta as static. Our server handles this automatically: it logs a warning, strips the parameters, and automatically retries sending the static template.">
+            <button onclick="toggleAccordion('faq-7')" class="w-full flex items-center justify-between gap-4 text-left group">
+                <div class="flex items-center gap-3">
+                    <span class="px-2 py-0.5 bg-rose-500/10 text-rose-455 text-[9px] font-mono font-bold rounded-md uppercase tracking-wider shrink-0">Troubleshooting</span>
+                    <h4 class="font-bold text-slate-200 group-hover:text-indigo-400 text-sm leading-snug transition-colors">Why does Meta return Error Code 132000 (parameter mismatch)?</h4>
+                </div>
+                <i data-lucide="chevron-down" id="chevron-faq-7" class="w-4 h-4 text-slate-400 group-hover:text-indigo-400 transition-all duration-300 shrink-0"></i>
+            </button>
+            <div id="answer-faq-7" class="hidden mt-4 pt-4 border-t border-slate-900/60 text-slate-400 font-sans leading-relaxed text-xs">
+                This happens if the payload sends template body parameters (such as the customer's name) to a template that was registered on Meta as static. Our server handles this automatically: it logs a warning, strips the parameters, and automatically retries sending the static template.
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<!-- Interactive Client-side Scripting -->
+<script>
+    let currentCategory = 'all';
+
+    function toggleAccordion(faqId) {
+        const answer = document.getElementById('answer-' + faqId);
+        const chevron = document.getElementById('chevron-' + faqId);
+        
+        if (!answer || !chevron) return;
+        
+        const isHidden = answer.classList.contains('hidden');
+        
+        if (isHidden) {
+            answer.classList.remove('hidden');
+            answer.classList.add('animate-slide-down');
+            chevron.classList.add('rotate-180');
+        } else {
+            answer.classList.add('hidden');
+            answer.classList.remove('animate-slide-down');
+            chevron.classList.remove('rotate-180');
+        }
+    }
+
+    function filterCategory(categoryName) {
+        currentCategory = categoryName;
+        
+        const pills = document.querySelectorAll('.cat-pill');
+        
+        // Define active colors for each dot and pill container
+        const dotColors = {
+            all: { active: ['bg-indigo-500', 'shadow-sm', 'shadow-indigo-500/50'], bg: ['bg-indigo-500/10'], border: ['border-indigo-500/30'], text: ['text-indigo-400', 'font-bold'] },
+            general: { active: ['bg-emerald-500', 'shadow-sm', 'shadow-emerald-500/50'], bg: ['bg-emerald-500/10'], border: ['border-emerald-500/30'], text: ['text-emerald-400', 'font-bold'] },
+            webhook: { active: ['bg-violet-500', 'shadow-sm', 'shadow-violet-500/50'], bg: ['bg-violet-500/10'], border: ['border-violet-500/30'], text: ['text-violet-400', 'font-bold'] },
+            troubleshooting: { active: ['bg-rose-500', 'shadow-sm', 'shadow-rose-500/50'], bg: ['bg-rose-500/10'], border: ['border-rose-500/30'], text: ['text-rose-400', 'font-bold'] }
+        };
+
+        const inactivePillClasses = ['bg-slate-955', 'border-slate-900', 'text-slate-450', 'hover:text-slate-200', 'font-semibold'];
+        const inactiveDotClasses = ['bg-slate-700'];
+
+        pills.forEach(pill => {
+            const cat = pill.id.replace('cat-', '');
+            const dot = pill.querySelector('.cat-dot');
+            
+            // Reset Pill layout
+            if (dotColors[cat]) {
+                pill.classList.remove(...dotColors[cat].bg, ...dotColors[cat].border, ...dotColors[cat].text);
+            }
+            pill.classList.add(...inactivePillClasses);
+
+            // Reset Dot layout
+            if (dot && dotColors[cat]) {
+                dot.classList.remove(...dotColors[cat].active);
+                dot.classList.add(...inactiveDotClasses);
+            }
+        });
+        
+        const activePill = document.getElementById('cat-' + categoryName);
+        if (activePill) {
+            const dot = activePill.querySelector('.cat-dot');
+            const conf = dotColors[categoryName];
+
+            // Set Pill to active
+            activePill.classList.remove(...inactivePillClasses);
+            activePill.classList.add(...conf.bg, ...conf.border, ...conf.text);
+
+            // Set Dot to active
+            if (dot) {
+                dot.classList.remove(...inactiveDotClasses);
+                dot.classList.add(...conf.active);
+            }
+        }
+        
+        applyFilters();
+    }
+
+    function filterSearch() {
+        applyFilters();
+    }
+
+    function applyFilters() {
+        const searchQuery = document.getElementById('faq-search').value.toLowerCase().trim();
+        const items = document.querySelectorAll('.faq-item');
+        let visibleCount = 0;
+        
+        items.forEach(item => {
+            const itemCategory = item.getAttribute('data-category');
+            const searchContent = item.getAttribute('data-search-content').toLowerCase();
+            
+            const matchesCategory = (currentCategory === 'all' || itemCategory === currentCategory);
+            const matchesSearch = !searchQuery || searchContent.includes(searchQuery);
+            
+            if (matchesCategory && matchesSearch) {
+                item.classList.remove('hidden');
+                visibleCount++;
+            } else {
+                item.classList.add('hidden');
+            }
+        });
+        
+        // Empty State management
+        const emptyState = document.getElementById('faq-empty-state');
+        if (visibleCount === 0) {
+            emptyState.classList.remove('hidden');
+        } else {
+            emptyState.classList.add('hidden');
+        }
+
+        // Update results counter
+        const resultsCount = document.getElementById('results-count');
+        if (resultsCount) {
+            if (searchQuery || currentCategory !== 'all') {
+                resultsCount.textContent = `Found ${visibleCount} match${visibleCount === 1 ? '' : 'es'}`;
+            } else {
+                resultsCount.textContent = `Showing all ${visibleCount} questions`;
+            }
+        }
+    }
+
+    // Keyboard hotkey '/' to focus search input
+    document.addEventListener('keydown', function(e) {
+        if (e.key === '/' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+            e.preventDefault();
+            const searchInput = document.getElementById('faq-search');
+            if (searchInput) searchInput.focus();
+        }
+    });
+</script>
+{% endblock %}

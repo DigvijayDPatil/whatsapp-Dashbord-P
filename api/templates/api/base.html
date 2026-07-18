@@ -1,0 +1,1225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Super Admin SaaS Control Console{% endblock %}</title>
+    <!-- Google Fonts: Inter/Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS Play CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Outfit', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        // Apply theme early to prevent flash
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        if (savedTheme === 'light') {
+            document.documentElement.classList.add('light-mode');
+        }
+    </script>
+    <style>
+        body {
+            background-color: #070913;
+            transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+        }
+        /* Custom scrollbar for terminal/console boxes */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #020617;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 999px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #334155;
+        }
+        
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-slide-down {
+            animation: slideDown 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+
+        /* Light Mode Styles override */
+        html.light-mode body {
+            background-color: #f8fafc !important;
+            color: #0f172a !important;
+        }
+        html.light-mode #sidebar-nav,
+        html.light-mode header,
+        html.light-mode footer {
+            background-color: #ffffff !important;
+            border-color: #e2e8f0 !important;
+        }
+        html.light-mode .bg-slate-955,
+        html.light-mode .bg-slate-950,
+        html.light-mode .bg-slate-900,
+        html.light-mode .bg-slate-900\/20,
+        html.light-mode .bg-slate-950\/20,
+        html.light-mode .bg-slate-950\/40,
+        html.light-mode .bg-slate-950\/60,
+        html.light-mode .bg-slate-950\/80,
+        html.light-mode .bg-slate-950\/50,
+        html.light-mode .bg-slate-950\/85 {
+            background-color: #ffffff !important;
+        }
+        html.light-mode .bg-slate-900\/30,
+        html.light-mode .bg-slate-900\/40,
+        html.light-mode .bg-slate-900\/50,
+        html.light-mode .hover\:bg-slate-900\/50:hover,
+        html.light-mode .hover\:bg-slate-900:hover,
+        html.light-mode .hover\:bg-slate-850:hover {
+            background-color: #f1f5f9 !important;
+        }
+        html.light-mode .border-slate-900,
+        html.light-mode .border-slate-800,
+        html.light-mode .border-slate-850,
+        html.light-mode .border-slate-950,
+        html.light-mode .divide-slate-900 > :not([hidden]) ~ :not([hidden]),
+        html.light-mode .border-indigo-955\/40,
+        html.light-mode .border-indigo-500\/20 {
+            border-color: #e2e8f0 !important;
+        }
+        html.light-mode .text-slate-100,
+        html.light-mode .text-slate-200 {
+            color: #0f172a !important;
+        }
+        html.light-mode .text-slate-300,
+        html.light-mode .text-slate-350 {
+            color: #334155 !important;
+        }
+        html.light-mode .text-slate-400 {
+            color: #475569 !important;
+        }
+        html.light-mode .text-slate-500 {
+            color: #64748b !important;
+        }
+        html.light-mode .text-slate-600 {
+            color: #94a3b8 !important;
+        }
+        html.light-mode .text-indigo-400,
+        html.light-mode .text-indigo-350,
+        html.light-mode .text-indigo-300 {
+            color: #4f46e5 !important;
+        }
+        html.light-mode .text-emerald-400 {
+            color: #059669 !important;
+        }
+        html.light-mode .text-amber-500 {
+            color: #d97706 !important;
+        }
+        html.light-mode .text-rose-400 {
+            color: #dc2626 !important;
+        }
+        html.light-mode .text-blue-400 {
+            color: #2563eb !important;
+        }
+        html.light-mode .text-teal-400 {
+            color: #0d9488 !important;
+        }
+        html.light-mode .text-violet-400 {
+            color: #7c3aed !important;
+        }
+
+        /* Stats Cards Vibrant Premium Gradients & Clean White Text */
+        .from-indigo-900\/60.via-indigo-950\/20 {
+            background-image: linear-gradient(135deg, #4f46e5 0%, #312e81 100%) !important;
+            border-color: rgba(99, 102, 241, 0.4) !important;
+            box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.15) !important;
+        }
+        .from-indigo-900\/60.via-indigo-950\/20 .text-slate-350,
+        .from-indigo-900\/60.via-indigo-950\/20 .text-slate-400 {
+            color: rgba(255, 255, 255, 0.8) !important;
+        }
+        .from-indigo-900\/60.via-indigo-950\/20 .text-indigo-400 {
+            color: #ffffff !important;
+        }
+
+        .from-emerald-900\/60.via-emerald-950\/20 {
+            background-image: linear-gradient(135deg, #10b981 0%, #064e3b 100%) !important;
+            border-color: rgba(16, 185, 129, 0.4) !important;
+            box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.15) !important;
+        }
+        .from-emerald-900\/60.via-emerald-950\/20 .text-slate-350,
+        .from-emerald-900\/60.via-emerald-950\/20 .text-slate-400 {
+            color: rgba(255, 255, 255, 0.8) !important;
+        }
+        .from-emerald-900\/60.via-emerald-950\/20 .text-emerald-400 {
+            color: #ffffff !important;
+        }
+        .from-emerald-900\/60.via-emerald-950\/20 .bg-emerald-400 {
+            background-color: #ffffff !important;
+        }
+
+        .from-rose-900\/60.via-rose-950\/20 {
+            background-image: linear-gradient(135deg, #f43f5e 0%, #881337 100%) !important;
+            border-color: rgba(244, 63, 94, 0.4) !important;
+            box-shadow: 0 10px 15px -3px rgba(244, 63, 94, 0.15) !important;
+        }
+        .from-rose-900\/60.via-rose-950\/20 .text-slate-350,
+        .from-rose-900\/60.via-rose-950\/20 .text-slate-400 {
+            color: rgba(255, 255, 255, 0.8) !important;
+        }
+        .from-rose-900\/60.via-rose-950\/20 .text-rose-500,
+        .from-rose-900\/60.via-rose-950\/20 .text-rose-400 {
+            color: #ffffff !important;
+        }
+
+        .from-blue-900\/60.via-blue-950\/20 {
+            background-image: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%) !important;
+            border-color: rgba(59, 130, 246, 0.4) !important;
+            box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.15) !important;
+        }
+        .from-blue-900\/60.via-blue-950\/20 .text-slate-350,
+        .from-blue-900\/60.via-blue-950\/20 .text-slate-400 {
+            color: rgba(255, 255, 255, 0.8) !important;
+        }
+        .from-blue-900\/60.via-blue-950\/20 .text-blue-400 {
+            color: #ffffff !important;
+        }
+
+        .from-teal-900\/60.via-teal-950\/20 {
+            background-image: linear-gradient(135deg, #06b6d4 0%, #115e59 100%) !important;
+            border-color: rgba(6, 182, 212, 0.4) !important;
+            box-shadow: 0 10px 15px -3px rgba(6, 182, 212, 0.15) !important;
+        }
+        .from-teal-900\/60.via-teal-950\/20 .text-slate-350,
+        .from-teal-900\/60.via-teal-950\/20 .text-slate-400 {
+            color: rgba(255, 255, 255, 0.8) !important;
+        }
+        .from-teal-900\/60.via-teal-950\/20 .text-teal-400 {
+            color: #ffffff !important;
+        }
+
+        /* Security Info Banner Light Mode Override */
+        html.light-mode .from-indigo-950\/20.via-slate-950.to-indigo-950\/20 {
+            background-image: linear-gradient(to right, rgba(238, 242, 255, 0.9), rgba(248, 250, 252, 0.9), rgba(238, 242, 255, 0.9)) !important;
+            border-color: rgba(99, 102, 241, 0.3) !important;
+        }
+        html.light-mode .from-indigo-950\/20.via-slate-950.to-indigo-950\/20 h2.text-indigo-400 {
+            color: #3730a3 !important; /* Premium Indigo-800 for high-contrast heading */
+        }
+        html.light-mode .from-indigo-950\/20.via-slate-950.to-indigo-950\/20 p.text-slate-400 {
+            color: #475569 !important; /* Readable slate-600 description */
+        }
+
+        /* Tenants list card gradients */
+        html.light-mode .from-indigo-955\/30,
+        html.light-mode .from-indigo-950\/30,
+        html.light-mode .from-slate-900\/30,
+        html.light-mode .from-rose-955\/30,
+        html.light-mode .from-rose-950\/30 {
+            background-image: linear-gradient(to bottom right, #ffffff, #f8fafc) !important;
+        }
+        
+        html.light-mode .bg-indigo-955\/20,
+        html.light-mode .bg-indigo-950\/20 {
+            background-color: rgba(224, 231, 255, 0.2) !important;
+        }
+        html.light-mode .bg-emerald-955\/20,
+        html.light-mode .bg-emerald-950\/20 {
+            background-color: rgba(209, 250, 229, 0.45) !important;
+        }
+        html.light-mode .border-emerald-900\/30 {
+            border-color: rgba(52, 211, 153, 0.3) !important;
+        }
+        html.light-mode .bg-amber-950\/20 {
+            background-color: rgba(254, 243, 199, 0.5) !important;
+        }
+        html.light-mode .border-amber-900\/30 {
+            border-color: rgba(251, 191, 36, 0.3) !important;
+        }
+        html.light-mode .bg-rose-955\/20,
+        html.light-mode .bg-rose-950\/20 {
+            background-color: rgba(254, 226, 226, 0.45) !important;
+        }
+        html.light-mode .border-rose-900\/30 {
+            border-color: rgba(248, 113, 113, 0.3) !important;
+        }
+        html.light-mode .bg-blue-955\/20 {
+            background-color: rgba(219, 234, 254, 0.2) !important;
+        }
+        html.light-mode .bg-teal-955\/20 {
+            background-color: rgba(204, 251, 241, 0.2) !important;
+        }
+        
+        html.light-mode .bg-emerald-955\/70,
+        html.light-mode .bg-emerald-950\/70 {
+            background-color: rgba(209, 250, 229, 0.8) !important;
+        }
+        html.light-mode .border-emerald-900\/50 {
+            border-color: rgba(52, 211, 153, 0.5) !important;
+        }
+        html.light-mode .bg-rose-955\/70,
+        html.light-mode .bg-rose-950\/70 {
+            background-color: rgba(254, 226, 226, 0.8) !important;
+        }
+        html.light-mode .border-rose-900\/50 {
+            border-color: rgba(248, 113, 113, 0.5) !important;
+        }
+        html.light-mode .bg-indigo-955\/70,
+        html.light-mode .bg-indigo-950\/70 {
+            background-color: rgba(224, 231, 255, 0.8) !important;
+        }
+        html.light-mode .border-indigo-900\/50 {
+            border-color: rgba(129, 140, 248, 0.5) !important;
+        }
+        html.light-mode .bg-yellow-955\/20,
+        html.light-mode .bg-yellow-950\/20 {
+            background-color: rgba(254, 243, 199, 0.8) !important;
+        }
+        html.light-mode .border-yellow-900\/40 {
+            border-color: rgba(245, 158, 11, 0.4) !important;
+        }
+        html.light-mode .text-yellow-200\/80 {
+            color: #b45309 !important;
+        }
+        html.light-mode .text-yellow-400 {
+            color: #d97706 !important;
+        }
+        html.light-mode circle[stroke="#0f172a"] {
+            stroke: #e2e8f0 !important;
+        }
+        html.light-mode .bg-indigo-600\/10 {
+            background-color: rgba(79, 70, 229, 0.08) !important;
+        }
+        /* Settings buttons in light mode */
+        html.light-mode button.bg-slate-800 {
+            background-color: #f1f5f9 !important;
+            border-color: #cbd5e1 !important;
+            color: #475569 !important;
+        }
+        html.light-mode button.bg-slate-800:hover {
+            background-color: #e2e8f0 !important;
+            color: #0f172a !important;
+        }
+        html.light-mode button.bg-rose-650 {
+            background-color: #fef2f2 !important;
+            border-color: #fecaca !important;
+            color: #dc2626 !important;
+        }
+        html.light-mode button.bg-rose-650:hover {
+            background-color: #fee2e2 !important;
+            color: #b91c1c !important;
+        }
+        /* Dark mode: add background for the wipe button since bg-rose-650 doesn't exist in Tailwind CDN */
+        button.bg-rose-650 {
+            background-color: #881337 !important;
+        }
+        button.bg-rose-650:hover {
+            background-color: #9f1239 !important;
+        }
+        html.light-mode input,
+        html.light-mode select,
+        html.light-mode textarea {
+            background-color: #ffffff !important;
+            border-color: #cbd5e1 !important;
+            color: #0f172a !important;
+        }
+        html.light-mode input::placeholder {
+            color: #94a3b8 !important;
+        }
+        html.light-mode input:focus,
+        html.light-mode select:focus,
+        html.light-mode textarea:focus {
+            border-color: #4f46e5 !important;
+        }
+        html.light-mode .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9 !important;
+        }
+        html.light-mode .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1 !important;
+        }
+        html.light-mode .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8 !important;
+        }
+        html.light-mode code {
+            background-color: #f1f5f9 !important;
+            color: #0f172a !important;
+            border: 1px solid #cbd5e1;
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+        /* SLA Gauge Card - Light Mode Overrides */
+        html.light-mode .sla-gauge-card {
+            background: linear-gradient(160deg, #f8fafc 0%, #ffffff 50%, #f1f5f9 100%) !important;
+            border-color: #e2e8f0 !important;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.04), 0 2px 4px -2px rgba(0, 0, 0, 0.03) !important;
+        }
+        html.light-mode .sla-gauge-card #sla-percentage-text {
+            color: #0f172a !important;
+        }
+        html.light-mode .sla-gauge-card #avg-latency {
+            color: #059669 !important;
+        }
+        html.light-mode .sla-gauge-card svg circle[stroke="#1e293b"] {
+            stroke: #e2e8f0 !important;
+            opacity: 0.8 !important;
+        }
+        /* Live Server Terminal - Unified Dark Theme & Glow */
+        .system-terminal-container,
+        html.light-mode .system-terminal-container {
+            background-color: #030712 !important;
+            background-image: none !important;
+            border-color: #111827 !important;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4) !important;
+        }
+        .system-terminal-container .border-b,
+        html.light-mode .system-terminal-container .border-b {
+            background-color: #090d16 !important;
+            border-color: #111827 !important;
+        }
+        .system-terminal-container span.text-slate-300,
+        html.light-mode .system-terminal-container span.text-slate-300,
+        .system-terminal-container .text-slate-350,
+        html.light-mode .system-terminal-container .text-slate-350 {
+            color: #e2e8f0 !important; /* Force high-contrast Slate-200 in both modes */
+        }
+        .system-terminal-container .text-indigo-400,
+        html.light-mode .system-terminal-container .text-indigo-400 {
+            color: #818cf8 !important; /* Force bright indigo-400 logo in both modes */
+        }
+        .system-terminal-container button[type="submit"],
+        html.light-mode .system-terminal-container button[type="submit"] {
+            background-color: #111827 !important;
+            border-color: #1f2937 !important;
+            color: #9ca3af !important;
+        }
+        .system-terminal-container button[type="submit"]:hover,
+        html.light-mode .system-terminal-container button[type="submit"]:hover {
+            background-color: #1f2937 !important;
+            color: #f3f4f6 !important;
+        }
+        .system-terminal-container .flex-1.bg-slate-955,
+        .system-terminal-container .flex-1.bg-slate-950,
+        html.light-mode .system-terminal-container .flex-1.bg-slate-955,
+        html.light-mode .system-terminal-container .flex-1.bg-slate-950 {
+            background-color: #030712 !important;
+        }
+        .system-terminal-container .custom-scrollbar::-webkit-scrollbar {
+            width: 7px !important;
+            height: 7px !important;
+            display: block !important;
+        }
+        .system-terminal-container .custom-scrollbar::-webkit-scrollbar-track,
+        html.light-mode .system-terminal-container .custom-scrollbar::-webkit-scrollbar-track {
+            background: #020617 !important;
+            border-radius: 999px !important;
+        }
+        .system-terminal-container .custom-scrollbar::-webkit-scrollbar-thumb,
+        html.light-mode .system-terminal-container .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #6366f1 !important;
+            border-radius: 999px !important;
+            border: 1px solid #020617 !important;
+        }
+        .system-terminal-container .custom-scrollbar::-webkit-scrollbar-thumb:hover,
+        html.light-mode .system-terminal-container .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #4f46e5 !important;
+        }
+        
+        /* Log items styling */
+        .system-terminal-container .group,
+        html.light-mode .system-terminal-container .group {
+            color: #94a3b8 !important;
+            background-color: transparent !important;
+            border-color: transparent !important;
+        }
+        .system-terminal-container .group:hover,
+        html.light-mode .system-terminal-container .group:hover {
+            background-color: #0f172a !important;
+            border-color: rgba(99, 102, 241, 0.3) !important;
+        }
+        .system-terminal-container .group .text-slate-600,
+        html.light-mode .system-terminal-container .group .text-slate-600,
+        .system-terminal-container .group .text-slate-650,
+        html.light-mode .system-terminal-container .group .text-slate-650,
+        .system-terminal-container .group div:first-child span:first-child,
+        html.light-mode .system-terminal-container .group div:first-child span:first-child {
+            color: #94a3b8 !important; /* High contrast Slate-400 for timestamp */
+        }
+        .system-terminal-container .group .text-indigo-400,
+        html.light-mode .system-terminal-container .group .text-indigo-400,
+        .system-terminal-container .group .text-indigo-450,
+        html.light-mode .system-terminal-container .group .text-indigo-450 {
+            color: #c084fc !important; /* Soft bright Purple-400 for phase title */
+        }
+        .system-terminal-container .group .text-slate-300,
+        html.light-mode .system-terminal-container .group .text-slate-300,
+        .system-terminal-container .group .text-slate-350,
+        html.light-mode .system-terminal-container .group .text-slate-350,
+        .system-terminal-container .group .text-slate-400,
+        html.light-mode .system-terminal-container .group .text-slate-400,
+        .system-terminal-container .text-slate-300,
+        html.light-mode .system-terminal-container .text-slate-300,
+        .system-terminal-container .text-slate-400,
+        html.light-mode .system-terminal-container .text-slate-400 {
+            color: #cbd5e1 !important; /* Slate-300 for normal message body */
+        }
+        .system-terminal-container .text-rose-400,
+        html.light-mode .system-terminal-container .text-rose-400 {
+            color: #f87171 !important; /* Bright Rose-400 for error */
+        }
+        .system-terminal-container .text-yellow-400,
+        html.light-mode .system-terminal-container .text-yellow-400 {
+            color: #fbbf24 !important; /* Bright Amber-400 for warning */
+        }
+        .system-terminal-container .text-emerald-400,
+        html.light-mode .system-terminal-container .text-emerald-400 {
+            color: #34d399 !important; /* Bright Emerald-400 for pass levels */
+        }
+        .system-terminal-container .text-teal-400,
+        html.light-mode .system-terminal-container .text-teal-400 {
+            color: #2dd4bf !important; /* Bright Teal-400 for SLA passed */
+        }
+        .system-terminal-container .group .text-indigo-500,
+        html.light-mode .system-terminal-container .group .text-indigo-500 {
+            color: #818cf8 !important;
+        }
+        .system-terminal-container .group:hover .text-indigo-500,
+        html.light-mode .system-terminal-container .group:hover .text-indigo-500 {
+            color: #a5b4fc !important;
+        }
+        /* Force Immersive Dark Theme for Explanation Modal */
+        #explanation-modal,
+        html.light-mode #explanation-modal {
+            background-color: rgba(3, 7, 18, 0.7) !important; /* Translucent dark backdrop */
+        }
+        #explanation-modal .bg-slate-900,
+        html.light-mode #explanation-modal .bg-slate-900 {
+            background-color: #0b0f19 !important;
+            border-color: rgba(99, 102, 241, 0.2) !important;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.75) !important;
+        }
+        #explanation-modal .bg-slate-955,
+        html.light-mode #explanation-modal .bg-slate-955 {
+            background-color: #030712 !important;
+            border-color: #111827 !important;
+        }
+        #explanation-modal .bg-slate-955\/65,
+        html.light-mode #explanation-modal .bg-slate-955\/65 {
+            background-color: rgba(3, 7, 18, 0.65) !important;
+        }
+        #explanation-modal h4,
+        html.light-mode #explanation-modal h4 {
+            color: #f8fafc !important; /* Force message title to be white */
+        }
+        #explanation-modal .text-slate-300,
+        html.light-mode #explanation-modal .text-slate-300 {
+            color: #cbd5e1 !important; /* Force breakdown body to be slate-300 */
+        }
+        #explanation-modal .text-slate-400,
+        html.light-mode #explanation-modal .text-slate-400 {
+            color: #94a3b8 !important; /* Force values to be slate-400 */
+        }
+        #explanation-modal .text-slate-500,
+        html.light-mode #explanation-modal .text-slate-500 {
+            color: #64748b !important; /* Force metadata labels to be slate-500 */
+        }
+        #explanation-modal .text-indigo-400,
+        html.light-mode #explanation-modal .text-indigo-400 {
+            color: #818cf8 !important; /* Force bright indigo-400 logo in both modes */
+        }
+        html.light-mode header button {
+            background-color: #f1f5f9 !important;
+            border-color: #cbd5e1 !important;
+        }
+        
+        /* Premium Subscriber Cards and Badges Styling */
+        .license-key-banner {
+            background-color: rgba(9, 13, 22, 0.6) !important;
+            border-color: rgba(255, 255, 255, 0.03) !important;
+        }
+        html.light-mode .license-key-banner {
+            background-color: rgba(99, 102, 241, 0.03) !important;
+            border-color: rgba(99, 102, 241, 0.12) !important;
+        }
+        
+        .status-badge-active {
+            background-color: rgba(16, 185, 129, 0.12) !important;
+            border: 1px solid rgba(16, 185, 129, 0.25) !important;
+            color: #34d399 !important;
+        }
+        html.light-mode .status-badge-active {
+            background-color: rgba(16, 185, 129, 0.08) !important;
+            border: 1px solid rgba(16, 185, 129, 0.2) !important;
+            color: #059669 !important;
+        }
+        
+        .status-badge-blocked {
+            background-color: rgba(239, 68, 68, 0.12) !important;
+            border: 1px solid rgba(239, 68, 68, 0.25) !important;
+            color: #f87171 !important;
+        }
+        html.light-mode .status-badge-blocked {
+            background-color: rgba(239, 68, 68, 0.08) !important;
+            border: 1px solid rgba(239, 68, 68, 0.2) !important;
+            color: #dc2626 !important;
+        }
+        
+        .status-badge-expired {
+            background-color: rgba(245, 158, 11, 0.12) !important;
+            border: 1px solid rgba(245, 158, 11, 0.25) !important;
+            color: #fbbf24 !important;
+        }
+        html.light-mode .status-badge-expired {
+            background-color: rgba(245, 158, 11, 0.08) !important;
+            border: 1px solid rgba(245, 158, 11, 0.2) !important;
+            color: #d97706 !important;
+        }
+
+        .status-badge-simulated {
+            background-color: rgba(99, 102, 241, 0.12) !important;
+            border: 1px solid rgba(99, 102, 241, 0.25) !important;
+            color: #a5b4fc !important;
+        }
+        html.light-mode .status-badge-simulated {
+            background-color: rgba(99, 102, 241, 0.08) !important;
+            border: 1px solid rgba(99, 102, 241, 0.2) !important;
+            color: #4f46e5 !important;
+        }
+        
+        /* Premium Card Border Shadow Transitions */
+        .subscriber-card {
+            box-shadow: 0 4px 20px -2px rgba(3, 7, 18, 0.5) !important;
+        }
+        html.light-mode .subscriber-card {
+            box-shadow: 0 10px 30px -10px rgba(99, 102, 241, 0.05), 0 1px 3px 0 rgba(99, 102, 241, 0.02) !important;
+            border-color: rgba(226, 232, 240, 0.8) !important;
+            background-image: linear-gradient(to bottom right, #ffffff, #fdfeff) !important;
+        }
+        html.light-mode .subscriber-card:hover {
+            box-shadow: 0 20px 40px -15px rgba(99, 102, 241, 0.12) !important;
+            border-color: rgba(99, 102, 241, 0.25) !important;
+        }
+        
+        /* Mobile Header Desktop Hidden Safety */
+        @media (min-width: 768px) {
+            header,
+            header.md\:hidden {
+                display: none !important;
+            }
+        }
+        
+        /* Top Status Bar Controls styling in Light Mode */
+        html.light-mode #theme-toggle {
+            background-color: #f1f5f9 !important;
+            border-color: #cbd5e1 !important;
+            color: #475569 !important;
+        }
+        html.light-mode #theme-toggle:hover {
+            background-color: #e2e8f0 !important;
+            color: #0f172a !important;
+        }
+        html.light-mode .host-port-badge {
+            background-color: #f1f5f9 !important;
+            border-color: #cbd5e1 !important;
+            color: #475569 !important;
+        }
+
+        /* Premium Sidebar Status Card overrides in Light Mode */
+        html.light-mode .sidebar-status-container {
+            border-top-color: rgba(226, 232, 240, 0.8) !important;
+            background-color: rgba(248, 250, 252, 0.4) !important;
+        }
+        html.light-mode .session-status-card {
+            background-color: #ffffff !important;
+            border-color: rgba(226, 232, 240, 0.8) !important;
+            box-shadow: 0 4px 15px -3px rgba(99, 102, 241, 0.05), 0 2px 6px -2px rgba(99, 102, 241, 0.03) !important;
+        }
+        html.light-mode .session-username {
+            color: #1e293b !important;
+        }
+        html.light-mode .session-active-label {
+            color: #64748b !important;
+        }
+        html.light-mode .session-version-pill {
+            background-color: #f1f5f9 !important;
+            border-color: #e2e8f0 !important;
+            color: #475569 !important;
+            box-shadow: none !important;
+        }
+        html.light-mode .session-avatar {
+            box-shadow: 0 4px 10px -2px rgba(99, 102, 241, 0.25) !important;
+        }
+        html.light-mode .session-avatar .absolute {
+            border-color: #ffffff !important;
+        }
+        
+        html.light-mode #avatar-color-picker {
+            background-color: #ffffff !important;
+            border-color: #cbd5e1 !important;
+            box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.15), 0 8px 10px -6px rgba(99, 102, 241, 0.1) !important;
+        }
+        
+        html.light-mode table th {
+            color: #475569 !important;
+        }
+        html.light-mode table tr {
+            border-bottom-color: rgba(226, 232, 240, 0.8) !important;
+        }
+        html.light-mode table tr:hover {
+            background-color: #f8fafc !important;
+        }
+        html.light-mode table td {
+            color: #1e293b !important;
+        }
+
+        .btn-logout-modern {
+            color: #94a3b8 !important;
+            background-color: transparent !important;
+            transition: all 0.2s ease !important;
+        }
+        .btn-logout-modern:hover {
+            color: #fb7185 !important;
+            background-color: rgba(244, 63, 94, 0.08) !important;
+        }
+        html.light-mode .btn-logout-modern {
+            color: #64748b !important;
+        }
+        html.light-mode .btn-logout-modern:hover {
+            color: #e11d48 !important;
+            background-color: rgba(225, 29, 72, 0.05) !important;
+        }
+        
+        /* Modern Secondary Button Styling */
+        .btn-secondary-modern {
+            background-color: rgba(15, 23, 42, 0.6) !important;
+            border-color: rgba(255, 255, 255, 0.05) !important;
+            color: #94a3b8 !important;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        }
+        .btn-secondary-modern:hover {
+            background-color: rgba(15, 23, 42, 0.9) !important;
+            border-color: rgba(99, 102, 241, 0.3) !important;
+            color: #818cf8 !important;
+            transform: translateY(-1px) scale(1.02) !important;
+        }
+        html.light-mode .btn-secondary-modern {
+            background-color: #ffffff !important;
+            border-color: rgba(99, 102, 241, 0.15) !important;
+            color: #475569 !important;
+        }
+        html.light-mode .btn-secondary-modern:hover {
+            background-color: rgba(99, 102, 241, 0.03) !important;
+            border-color: rgba(99, 102, 241, 0.3) !important;
+            color: #4f46e5 !important;
+        }
+        
+        /* Audit Log Table Styling overrides */
+        .audit-log-row {
+            background-color: transparent !important;
+            transition: all 0.2s ease !important;
+        }
+        .audit-log-row:hover {
+            background-color: rgba(255, 255, 255, 0.02) !important;
+        }
+        html.light-mode .audit-log-row:hover {
+            background-color: rgba(99, 102, 241, 0.03) !important;
+        }
+        
+        /* Table Header Styling in Light Mode */
+        html.light-mode table thead tr {
+            background-color: rgba(99, 102, 241, 0.01) !important;
+            border-color: rgba(226, 232, 240, 0.8) !important;
+        }
+
+        /* Global Modal and Backdrop Blur styles */
+        @keyframes modalEnter {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .animate-modal-enter {
+            animation: modalEnter 0.22s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+        .backdrop-blur-premium {
+            background-color: rgba(15, 23, 42, 0.45) !important;
+            -webkit-backdrop-filter: blur(8px) !important;
+            backdrop-filter: blur(8px) !important;
+        }
+
+        /* Prevent system Webkit search Cancel buttons from rendering */
+        input[type="search"]::-webkit-search-decoration,
+        input[type="search"]::-webkit-search-cancel-button,
+        input[type="search"]::-webkit-search-results-button,
+        input[type="search"]::-webkit-search-results-decoration {
+            display: none;
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="min-h-screen bg-[#070913] text-slate-100 font-sans selection:bg-indigo-600 selection:text-white flex flex-col md:flex-row">
+
+    <!-- Mobile Header (Visible only on small screens) -->
+    <header class="md:hidden border-b border-slate-900 bg-slate-950 px-4 py-3 flex items-center justify-between sticky top-0 z-50 w-full shrink-0">
+        <div class="flex items-center gap-2">
+            <div class="relative flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-600 to-violet-600 text-white shadow-md shadow-indigo-500/20">
+                <i data-lucide="phone-call" class="w-4 h-4 relative z-10"></i>
+            </div>
+            <span class="text-sm font-black text-slate-100 tracking-tight flex items-center gap-0.5">
+                WABA <span class="bg-gradient-to-r from-indigo-500 to-violet-500 bg-clip-text text-transparent">Recover</span>
+            </span>
+        </div>
+        <div class="flex items-center gap-3">
+            <button onclick="toggleTheme()" class="flex items-center justify-center p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200 cursor-pointer transition-colors" title="Toggle Theme">
+                <i data-lucide="sun" class="w-4 h-4 text-amber-500 hidden dark-icon"></i>
+                <i data-lucide="moon" class="w-4 h-4 text-indigo-400 light-icon"></i>
+            </button>
+            <button onclick="toggleMobileMenu()" class="text-slate-400 hover:text-slate-200 cursor-pointer">
+                <i data-lucide="menu" class="w-5 h-5"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Dark Backdrop for mobile menu drawer -->
+    <div id="mobile-menu-backdrop" onclick="toggleMobileMenu()" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden"></div>
+
+    <!-- Left Sidebar (Hidden on mobile by default, toggled via drawer overlay) -->
+    <aside id="sidebar-nav" class="hidden md:flex flex-col w-64 bg-slate-950 border-r border-slate-900 shrink-0 h-screen fixed md:sticky top-0 left-0 inset-y-0 z-50 md:z-40 shadow-2xl md:shadow-none transition-all duration-300">
+        <!-- Brand Area -->
+        <div class="p-6 border-b border-slate-900 flex items-center gap-3">
+            <div class="relative flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-600 text-white shadow-lg shadow-indigo-500/30 shrink-0">
+                <div class="absolute inset-0 rounded-xl bg-indigo-400/20 blur-sm animate-pulse"></div>
+                <i data-lucide="phone-call" class="w-5 h-5 relative z-10"></i>
+            </div>
+            <div>
+                <h1 class="text-sm font-black text-slate-100 tracking-tight leading-none flex items-center gap-0.5">
+                    WABA <span class="bg-gradient-to-r from-indigo-500 to-violet-500 bg-clip-text text-transparent">Recover</span>
+                </h1>
+                <span class="text-[9px] font-mono font-bold text-indigo-400 mt-1.5 block tracking-wider">Super Admin SaaS</span>
+            </div>
+        </div>
+
+        <!-- Navigation Links -->
+        <nav class="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto custom-scrollbar">
+            <div class="text-[9px] font-bold text-slate-500 uppercase tracking-wider px-3 mb-2 font-mono">Control Center</div>
+            <a href="{% url 'overview' %}" class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-slate-900/50 decoration-none transition-all {% if active_page == 'overview' %}bg-indigo-600/10 text-indigo-400{% else %}text-slate-400 hover:text-slate-200{% endif %}">
+                <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+                <span>Overview Dashboard</span>
+            </a>
+            <a href="{% url 'tenants' %}" class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-slate-900/50 decoration-none transition-all {% if active_page == 'tenants' %}bg-indigo-600/10 text-indigo-400{% else %}text-slate-400 hover:text-slate-200{% endif %}">
+                <i data-lucide="users" class="w-4 h-4"></i>
+                <span>Subscribers</span>
+            </a>
+            <a href="{% url 'history' %}" class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-slate-900/50 decoration-none transition-all {% if active_page == 'history' %}bg-indigo-600/10 text-indigo-400{% else %}text-slate-400 hover:text-slate-200{% endif %}">
+                <i data-lucide="history" class="w-4 h-4"></i>
+                <span>Activity History</span>
+            </a>
+            <a href="{% url 'sandbox' %}" class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-slate-900/50 decoration-none transition-all {% if active_page == 'sandbox' %}bg-indigo-600/10 text-indigo-400{% else %}text-slate-400 hover:text-slate-250{% endif %}">
+                <i data-lucide="play" class="w-4 h-4"></i>
+                <span>Simulator Sandbox</span>
+            </a>
+            <a href="{% url 'settings' %}" class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-slate-900/50 decoration-none transition-all {% if active_page == 'settings' %}bg-indigo-600/10 text-indigo-400{% else %}text-slate-400 hover:text-slate-200{% endif %}">
+                <i data-lucide="settings" class="w-4 h-4"></i>
+                <span>System Settings</span>
+            </a>
+            
+            <div class="pt-6">
+                <div class="text-[9px] font-bold text-slate-500 uppercase tracking-wider px-3 mb-2 font-mono">Help Center</div>
+                <a href="{% url 'qa' %}" class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-slate-900/50 decoration-none transition-all {% if active_page == 'qa' %}bg-indigo-600/10 text-indigo-400{% else %}text-slate-400 hover:text-slate-250{% endif %}">
+                    <i data-lucide="message-square" class="w-4 h-4"></i>
+                    <span>Q&A Help Center</span>
+                </a>
+            </div>
+            <div class="pt-6">
+                <div class="text-[9px] font-bold text-slate-500 uppercase tracking-wider px-3 mb-2 font-mono">Session</div>
+                <a href="javascript:void(0)" onclick="showLogoutModal(event)" class="btn-logout-modern flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold decoration-none transition-all cursor-pointer">
+                    <i data-lucide="power" class="w-4 h-4"></i>
+                    <span>Sign Out</span>
+                </a>
+                <button onclick="toggleTheme()" class="w-full flex items-center gap-3 px-3 py-2 mt-1.5 rounded-xl text-xs font-semibold text-slate-400 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-900/50 transition-all border border-transparent cursor-pointer">
+                    <i data-lucide="sun" class="w-4 h-4 text-amber-500 hidden dark-icon"></i>
+                    <i data-lucide="moon" class="w-4 h-4 text-indigo-400 light-icon"></i>
+                    <span class="theme-toggle-text">Light Mode</span>
+                </button>
+            </div>
+        </nav>
+
+        <!-- Sidebar Footer Status -->
+        <div class="sidebar-status-container p-4 border-t border-slate-900 bg-slate-955/20 shrink-0 relative">
+            <!-- Floating Color Picker popup -->
+            <div id="avatar-color-picker" class="hidden absolute bottom-18 left-4 z-50 p-2.5 rounded-xl bg-slate-900/90 backdrop-blur-md border border-slate-800 shadow-2xl flex gap-1.5 animate-fade-in">
+                <button onclick="changeAvatarColor('indigo')" class="w-5 h-5 rounded-lg bg-gradient-to-tr from-indigo-600 to-violet-600 border border-white/10 hover:scale-110 transition-transform cursor-pointer" title="Indigo"></button>
+                <button onclick="changeAvatarColor('emerald')" class="w-5 h-5 rounded-lg bg-gradient-to-tr from-emerald-600 to-teal-600 border border-white/10 hover:scale-110 transition-transform cursor-pointer" title="Emerald"></button>
+                <button onclick="changeAvatarColor('rose')" class="w-5 h-5 rounded-lg bg-gradient-to-tr from-rose-600 to-pink-600 border border-white/10 hover:scale-110 transition-transform cursor-pointer" title="Rose"></button>
+                <button onclick="changeAvatarColor('amber')" class="w-5 h-5 rounded-lg bg-gradient-to-tr from-amber-500 to-orange-600 border border-white/10 hover:scale-110 transition-transform cursor-pointer" title="Amber"></button>
+                <button onclick="changeAvatarColor('sky')" class="w-5 h-5 rounded-lg bg-gradient-to-tr from-sky-500 to-indigo-600 border border-white/10 hover:scale-110 transition-transform cursor-pointer" title="Sky"></button>
+                <button onclick="changeAvatarColor('ruby')" class="w-5 h-5 rounded-lg bg-gradient-to-tr from-red-600 to-rose-700 border border-white/10 hover:scale-110 transition-transform cursor-pointer" title="Ruby"></button>
+            </div>
+
+            <div class="session-status-card flex items-center justify-between p-3 rounded-2xl bg-slate-900/60 border border-slate-805/50 backdrop-blur-md shadow-lg shadow-black/20 animate-fade-in">
+                <div class="flex items-center gap-3">
+                    <!-- Avatar circle with linear gradient and pulsing status dot -->
+                    <div id="user-avatar-badge" onclick="toggleAvatarColorPicker(event)" class="session-avatar relative flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-600 font-bold text-xs text-white uppercase shadow-lg shadow-indigo-500/20 cursor-pointer hover:scale-105 transition-transform" title="Customize theme color">
+                        {% if request.user.is_authenticated %}
+                            {{ request.user.username|slice:":1" }}
+                        {% else %}
+                            A
+                        {% endif %}
+                        <!-- Active Pulsing Dot -->
+                        <span class="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border border-slate-900 animate-pulse"></span>
+                    </div>
+                    
+                    <!-- Username & Active State Details -->
+                    <div class="flex flex-col text-left">
+                        <span class="session-username text-xs font-bold text-slate-200 tracking-wide">
+                            {% if request.user.is_authenticated %}
+                                {{ request.user.username }}
+                            {% else %}
+                                Admin
+                            {% endif %}
+                        </span>
+                        <span class="session-active-label text-[8px] font-bold text-slate-500 tracking-wider uppercase mt-0.5">Session Active</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content Panel wrapper -->
+    <div class="flex-1 flex flex-col min-h-screen overflow-x-hidden">
+        
+
+
+        <!-- Main Body Stage Container -->
+        <main class="flex-1 p-6 md:p-8 space-y-8">
+            
+            <!-- Security Info Banner -->
+            <div class="p-5 border border-indigo-500/20 rounded-2xl bg-gradient-to-r from-indigo-950/20 via-slate-950 to-indigo-950/20 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 text-xs">
+                <div class="space-y-1">
+                    <h2 class="font-bold text-indigo-400 flex items-center gap-1.5">
+                        <i data-lucide="lock" class="w-3.5 h-3.5"></i> Backend Security & Credential Isolation Architecture
+                    </h2>
+                    <p class="text-slate-400 leading-relaxed max-w-3xl font-sans">
+                        This Super Admin server completely encapsulates sensitive subscriber Meta WhatsApp Business Tokens. Remote mobile app call events hit the secure Django REST endpoints, preventing any client-side credential exposure.
+                    </p>
+                </div>
+                <div class="flex gap-2 shrink-0">
+                    <div class="px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-900 text-[10px] font-mono text-slate-500">
+                        Database: <span class="text-emerald-400">Local SQLite</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Block Content -->
+            {% block content %}{% endblock %}
+
+        </main>
+
+        <!-- Standard Humble Branding Footer -->
+        <footer class="border-t border-slate-900/50 py-6 bg-slate-950/40 text-xs text-slate-500 px-6 md:px-8">
+            <div class="flex items-center gap-2">
+                <i data-lucide="shield-check" class="w-3.5 h-3.5 text-slate-600"></i>
+                <span>&copy; {% now "Y" %} Walstar Technologies Pvt. Ltd.</span>
+                <i data-lucide="heart" class="w-3 h-3 text-rose-500 animate-pulse fill-rose-500 ml-0.5"></i>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Modal overlays block for root-level rendering -->
+    {% block modals %}{% endblock %}
+
+    <!-- Mobile Navigation Toggle Script -->
+    <script>
+        function toggleMobileMenu() {
+            const sidebar = document.getElementById('sidebar-nav');
+            const backdrop = document.getElementById('mobile-menu-backdrop');
+            if (sidebar) {
+                sidebar.classList.toggle('hidden');
+                sidebar.classList.toggle('flex');
+            }
+            if (backdrop) {
+                backdrop.classList.toggle('hidden');
+            }
+        }
+
+        function toggleTheme() {
+            const html = document.documentElement;
+            const isLight = html.classList.toggle('light-mode');
+            localStorage.setItem('theme', isLight ? 'light' : 'dark');
+            updateThemeUI(isLight);
+        }
+
+        function setTheme(isLight) {
+            const html = document.documentElement;
+            if (isLight) {
+                html.classList.add('light-mode');
+            } else {
+                html.classList.remove('light-mode');
+            }
+            localStorage.setItem('theme', isLight ? 'light' : 'dark');
+            updateThemeUI(isLight);
+        }
+
+        function updateThemeUI(isLight) {
+            const textEls = document.querySelectorAll('.theme-toggle-text');
+            
+            // Get all sun & moon elements
+            const darkIcons = document.querySelectorAll('.dark-icon');
+            const lightIcons = document.querySelectorAll('.light-icon');
+            
+            if (isLight) {
+                // Light mode active: show moon icon and text "Dark Mode"
+                textEls.forEach(el => el.textContent = 'Dark Mode');
+                darkIcons.forEach(el => el.classList.add('hidden'));
+                lightIcons.forEach(el => el.classList.remove('hidden'));
+            } else {
+                // Dark mode active: show sun icon and text "Light Mode"
+                textEls.forEach(el => el.textContent = 'Light Mode');
+                darkIcons.forEach(el => el.classList.remove('hidden'));
+                lightIcons.forEach(el => el.classList.add('hidden'));
+            }
+        }
+
+        // Run early and on DOM load to sync UI state
+        const initialThemeIsLight = document.documentElement.classList.contains('light-mode');
+        updateThemeUI(initialThemeIsLight);
+        document.addEventListener('DOMContentLoaded', () => {
+            const isLight = document.documentElement.classList.contains('light-mode');
+            updateThemeUI(isLight);
+            
+            // Load saved avatar theme color
+            const savedColorTheme = localStorage.getItem('user-avatar-color') || 'indigo';
+            changeAvatarColor(savedColorTheme);
+        });
+
+        // Avatar Color Customization Functions
+        function toggleAvatarColorPicker(event) {
+            event.stopPropagation();
+            const picker = document.getElementById('avatar-color-picker');
+            if (picker) picker.classList.toggle('hidden');
+        }
+
+        // Close color picker on outside click
+        document.addEventListener('click', function(event) {
+            const picker = document.getElementById('avatar-color-picker');
+            const avatar = document.getElementById('user-avatar-badge');
+            if (picker && !picker.classList.contains('hidden') && !picker.contains(event.target) && event.target !== avatar) {
+                picker.classList.add('hidden');
+            }
+        });
+
+        const avatarGradients = {
+            indigo: 'from-indigo-600 to-violet-600',
+            emerald: 'from-emerald-600 to-teal-600',
+            rose: 'from-rose-600 to-pink-600',
+            amber: 'from-amber-500 to-orange-600',
+            sky: 'from-sky-500 to-indigo-600',
+            ruby: 'from-red-600 to-rose-700'
+        };
+
+        function changeAvatarColor(themeName) {
+            const avatar = document.getElementById('user-avatar-badge');
+            if (!avatar) return;
+            
+            // Remove all possible gradients
+            Object.values(avatarGradients).forEach(gradient => {
+                gradient.split(' ').forEach(cls => avatar.classList.remove(cls));
+            });
+            
+            // Add chosen gradient
+            const newGradient = avatarGradients[themeName] || avatarGradients.indigo;
+            newGradient.split(' ').forEach(cls => avatar.classList.add(cls));
+            
+            // Save selection
+            localStorage.setItem('user-avatar-color', themeName);
+            
+            // Hide picker
+            const picker = document.getElementById('avatar-color-picker');
+            if (picker) picker.classList.add('hidden');
+        }
+
+        // Logout Modal Functions
+        function showLogoutModal(event) {
+            if (event) event.preventDefault();
+            const modal = document.getElementById('logout-confirm-modal');
+            if (modal) {
+                modal.classList.remove('hidden');
+                // Trigger reflow
+                void modal.offsetWidth;
+                modal.classList.remove('opacity-0');
+                const card = modal.querySelector('.scale-95');
+                if (card) card.classList.remove('scale-95');
+            }
+        }
+
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeLogoutModal();
+            }
+        });
+
+        function closeLogoutModal() {
+            const modal = document.getElementById('logout-confirm-modal');
+            if (modal) {
+                modal.classList.add('opacity-0');
+                const card = modal.querySelector('.scale-95') || modal.querySelector('div > div');
+                if (card) card.classList.add('scale-95');
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                }, 300);
+            }
+        }
+    </script>
+    
+    <!-- Beautiful Modern Logout Confirmation Modal -->
+    <div id="logout-confirm-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-955/80 backdrop-blur-sm hidden opacity-0 transition-opacity duration-300">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-6 space-y-6 shadow-2xl scale-95 transition-transform duration-300 relative shadow-black/80">
+            <!-- Icon/Branding -->
+            <div class="flex flex-col items-center text-center space-y-4">
+                <div class="relative flex items-center justify-center w-12 h-12 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-500 shadow-lg shadow-rose-955/20 shrink-0">
+                    <div class="absolute inset-0 rounded-full bg-rose-500/5 blur-sm animate-pulse"></div>
+                    <i data-lucide="power" class="w-6 h-6 relative z-10"></i>
+                </div>
+                <div class="space-y-1.5">
+                    <h3 class="text-sm font-bold text-slate-100 uppercase tracking-wider font-mono">Confirm Sign Out</h3>
+                    <p class="text-[11px] text-slate-400 font-sans leading-relaxed">Are you sure you want to terminate your current session? You will need to enter your credentials to log back in.</p>
+                </div>
+            </div>
+            
+            <!-- Actions -->
+            <div class="flex gap-2">
+                <button onclick="closeLogoutModal()" class="flex-1 px-4 py-2 text-xs font-semibold text-slate-400 hover:text-slate-200 bg-slate-950 hover:bg-slate-900 rounded-xl border border-slate-800 cursor-pointer transition-all">
+                    Cancel
+                </button>
+                <a id="logout-confirm-btn" href="{% url 'logout' %}" class="flex-1 px-4 py-2 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-500 text-center rounded-xl cursor-pointer transition-all shadow-md shadow-rose-950/20 flex items-center justify-center decoration-none">
+                    Sign Out
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Destructive Action Modal -->
+    <div id="confirm-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+        <!-- Backdrop Blur overlay with dark tint -->
+        <div class="absolute inset-0 bg-slate-955/80 backdrop-blur-premium transition-all duration-300" onclick="closeConfirmModal()"></div>
+        
+        <!-- Modal Content Card -->
+        <div class="relative w-full max-w-sm bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl shadow-black/80 flex flex-col items-center text-center animate-modal-enter z-10">
+            
+            <!-- Form State Container -->
+            <div id="modal-form-state" class="w-full space-y-6 flex flex-col items-center">
+                <!-- Header Icon (Red ring alert with glowing pulse) -->
+                <div id="modal-icon-container" class="relative w-14 h-14 rounded-full bg-rose-500/10 border border-rose-500/25 flex items-center justify-center text-rose-500 shadow-lg shadow-rose-500/10 shrink-0">
+                    <div class="absolute inset-0 rounded-full bg-rose-500/20 blur-md animate-pulse"></div>
+                    <div class="absolute inset-1 rounded-full border border-rose-500/30"></div>
+                    <i id="modal-icon" data-lucide="alert-triangle" class="w-6 h-6 relative z-10"></i>
+                </div>
+                
+                <!-- Title & Description -->
+                <div class="space-y-2">
+                    <h3 id="modal-title" class="text-sm font-extrabold tracking-widest uppercase text-slate-100 font-sans">
+                        CONFIRM DESTRUCTIVE ACTION
+                    </h3>
+                    <p id="modal-desc" class="text-xs text-slate-400 leading-relaxed max-w-[280px]">
+                        Are you sure you want to proceed with this destructive operation?
+                    </p>
+                </div>
+                
+                <!-- Password Input -->
+                <div class="w-full space-y-1.5 text-left">
+                    <label class="text-[10px] font-bold text-slate-400 tracking-wider uppercase block">
+                        Verify Administrator Password
+                    </label>
+                    <input type="password" id="modal-password" placeholder="••••••••" autocomplete="new-password" class="w-full text-xs px-4 py-3 bg-slate-900 border border-slate-800 rounded-xl text-slate-100 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all font-mono">
+                    <span id="modal-error" class="hidden text-[10px] font-bold text-rose-500 block">
+                        Password cannot be empty.
+                    </span>
+                </div>
+                
+                <!-- Actions Buttons -->
+                <div class="grid grid-cols-2 gap-3 w-full pt-2">
+                    <button type="button" onclick="closeConfirmModal()" class="w-full py-3 bg-slate-950 border border-slate-800 text-slate-400 font-semibold rounded-xl text-xs hover:bg-slate-900 transition-all cursor-pointer">
+                        Cancel
+                    </button>
+                    <button type="button" id="modal-submit-btn" class="w-full py-3 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl text-xs transition-all cursor-pointer shadow-lg shadow-rose-950/20">
+                        Confirm
+                    </button>
+                </div>
+            </div>
+
+            <!-- Modal Loading State (Initially hidden) -->
+            <div id="modal-loading-state" class="hidden w-full flex flex-col items-center justify-center py-4 space-y-5">
+                <!-- Animated Icon with Radar Rings -->
+                <div class="relative w-20 h-20 flex items-center justify-center shrink-0 select-none">
+                    <!-- Ping waves -->
+                    <div class="absolute inset-0 rounded-full border border-indigo-500/25 animate-ping" style="animation-duration: 2s;"></div>
+                    <div class="absolute inset-2 rounded-full border border-indigo-500/15 animate-pulse" style="animation-duration: 1.5s;"></div>
+                    
+                    <!-- Rotating gradient ring -->
+                    <div class="absolute inset-0 rounded-full border-2 border-slate-800/80 border-t-indigo-500 animate-spin" style="animation-duration: 1.1s;"></div>
+                    
+                    <!-- Center circle -->
+                    <div class="relative w-12 h-12 rounded-full bg-slate-950 border border-slate-850 flex items-center justify-center text-indigo-500 shadow-inner" style="background-color: #030712; border-color: #1e293b;">
+                        <i id="loading-state-icon" data-lucide="database" class="w-5 h-5 animate-pulse"></i>
+                    </div>
+                </div>
+                
+                <!-- Description -->
+                <div class="space-y-1 text-center select-none">
+                    <h4 id="loading-state-title" class="text-[10px] font-extrabold tracking-widest text-slate-500 dark:text-slate-400 uppercase font-sans">
+                        DATABASE OPERATION IN PROGRESS
+                    </h4>
+                    <p id="loading-state-step" class="text-xs font-bold text-indigo-500 font-mono tracking-wide uppercase">
+                        Initializing...
+                    </p>
+                </div>
+                
+                <!-- Mini-Terminal for Dynamic Logs Purging (Highly Premium) -->
+                <div class="w-full h-24 bg-slate-950 border border-slate-900 rounded-xl p-3 overflow-y-auto font-mono text-[9px] text-left leading-relaxed flex flex-col justify-end select-none custom-scrollbar shadow-inner" style="background-color: #030712 !important; border-color: #111827 !important;">
+                    <div id="terminal-flow-lines" class="space-y-1 text-slate-400">
+                        <!-- Dynamic code wiping feed lines will scroll here -->
+                    </div>
+                </div>
+                
+                <!-- Glowing Progress Bar -->
+                <div class="w-full h-1 bg-slate-900 rounded-full overflow-hidden relative shadow-inner">
+                    <div id="loading-progress-bar" class="absolute left-0 top-0 bottom-0 bg-gradient-to-r from-indigo-500 to-violet-500 shadow-[0_0_8px_rgba(99,102,241,0.5)] transition-all duration-300 w-0"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Initialize Lucide Icons -->
+    <script>
+        lucide.createIcons();
+
+        // Prevent aggressive browser autocomplete pre-filling on load
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                const searchInputs = document.querySelectorAll('input[type="search"]');
+                searchInputs.forEach(function(input) {
+                    input.value = '';
+                });
+            }, 60);
+        });
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

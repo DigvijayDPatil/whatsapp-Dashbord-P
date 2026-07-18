@@ -1,0 +1,446 @@
+{% extends 'api/base.html' %}
+
+{% block extra_css %}
+<!-- Load official Atom One Dark theme for professional code syntax highlighting -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<style>
+    /* Custom style overrides to blend code headers with Atom One Dark theme */
+    .academy-code-header {
+        background-color: #21252b !important;
+        border-color: #181a1f !important;
+        color: #abb2bf !important;
+    }
+    .academy-code-header span {
+        color: #abb2bf !important;
+    }
+    .academy-code-header button {
+        color: #5c6370 !important;
+    }
+    .academy-code-header button:hover {
+        color: #ffffff !important;
+    }
+
+    .academy-code-pre {
+        background-color: #282c34 !important;
+        border-color: #181a1f !important;
+        padding: 0 !important; /* Let hljs code block manage padding */
+    }
+    
+    .academy-code-pre code {
+        padding: 1.25rem !important;
+        background: transparent !important;
+        font-family: 'JetBrains Mono', 'Fira Code', 'Fira Mono', monospace !important;
+        font-size: 11px !important;
+        line-height: 1.6 !important;
+    }
+
+    /* Keep code blocks dark and professional in both light and dark mode */
+    html.light-mode .academy-code-header,
+    html.light-mode .academy-code-pre {
+        box-shadow: 0 4px 15px -3px rgba(0, 0, 0, 0.15) !important;
+    }
+
+    .tab-btn {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+</style>
+{% endblock %}
+
+{% block title %}Beginner's Academy - WABA Recover{% endblock %}
+
+{% block content %}
+<div class="flex flex-col lg:flex-row gap-6 animate-fade-in">
+    
+    <!-- Tab Selectors -->
+    <div class="w-full lg:w-1/4 flex flex-col gap-2 shrink-0">
+        <h3 class="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-3 px-3">
+            SaaS Blueprint Phases
+        </h3>
+        
+        <!-- Tab 1 -->
+        <button onclick="switchTab('phase1')" id="tab-btn-phase1" class="tab-btn flex items-start gap-3 p-3.5 rounded-xl text-left transition-all border bg-slate-900 border-indigo-500 text-white shadow-md shadow-indigo-950/40">
+            <div class="p-2 rounded-lg bg-indigo-600 text-white" id="tab-icon-box-phase1">
+                <i data-lucide="database" class="w-4.5 h-4.5"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-medium text-indigo-400 font-mono">Phase 1</span>
+                    <div id="tab-pulse-phase1" class="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse"></div>
+                </div>
+                <h4 class="text-sm font-semibold tracking-tight leading-snug text-slate-100">Database Setup</h4>
+                <p class="text-[11px] text-slate-500 truncate mt-0.5">SQLite & migrations</p>
+            </div>
+        </button>
+
+        <!-- Tab 2 -->
+        <button onclick="switchTab('phase2')" id="tab-btn-phase2" class="tab-btn flex items-start gap-3 p-3.5 rounded-xl text-left transition-all border bg-slate-955 hover:bg-slate-900/50 border-slate-900 text-slate-400 hover:text-slate-200">
+            <div class="p-2 rounded-lg bg-slate-900 text-slate-500" id="tab-icon-box-phase2">
+                <i data-lucide="terminal" class="w-4.5 h-4.5"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-medium text-slate-500 font-mono">Phase 2</span>
+                    <div id="tab-pulse-phase2" class="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse hidden"></div>
+                </div>
+                <h4 class="text-sm font-semibold tracking-tight leading-snug">Django Server Engine</h4>
+                <p class="text-[11px] text-slate-500 truncate mt-0.5">MVC architecture & views</p>
+            </div>
+        </button>
+
+        <!-- Tab 3 -->
+        <button onclick="switchTab('phase3')" id="tab-btn-phase3" class="tab-btn flex items-start gap-3 p-3.5 rounded-xl text-left transition-all border bg-slate-955 hover:bg-slate-900/50 border-slate-900 text-slate-400 hover:text-slate-200">
+            <div class="p-2 rounded-lg bg-slate-900 text-slate-500" id="tab-icon-box-phase3">
+                <i data-lucide="shield-alert" class="w-4.5 h-4.5"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-medium text-slate-500 font-mono">Phase 3</span>
+                    <div id="tab-pulse-phase3" class="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse hidden"></div>
+                </div>
+                <h4 class="text-sm font-semibold tracking-tight leading-snug">Plan & Expiry Check</h4>
+                <p class="text-[11px] text-slate-500 truncate mt-0.5">Automated validation</p>
+            </div>
+        </button>
+
+        <!-- Tab 4 -->
+        <button onclick="switchTab('phase4')" id="tab-btn-phase4" class="tab-btn flex items-start gap-3 p-3.5 rounded-xl text-left transition-all border bg-slate-955 hover:bg-slate-900/50 border-slate-900 text-slate-400 hover:text-slate-200">
+            <div class="p-2 rounded-lg bg-slate-900 text-slate-500" id="tab-icon-box-phase4">
+                <i data-lucide="share2" class="w-4.5 h-4.5"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-medium text-slate-500 font-mono">Phase 4</span>
+                    <div id="tab-pulse-phase4" class="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse hidden"></div>
+                </div>
+                <h4 class="text-sm font-semibold tracking-tight leading-snug">Meta WhatsApp API</h4>
+                <p class="text-[11px] text-slate-500 truncate mt-0.5">Secure API integration</p>
+            </div>
+        </button>
+
+        <!-- Tab 5 -->
+        <button onclick="switchTab('phase5')" id="tab-btn-phase5" class="tab-btn flex items-start gap-3 p-3.5 rounded-xl text-left transition-all border bg-slate-955 hover:bg-slate-900/50 border-slate-900 text-slate-400 hover:text-slate-200">
+            <div class="p-2 rounded-lg bg-slate-900 text-slate-500" id="tab-icon-box-phase5">
+                <i data-lucide="book-open" class="w-4.5 h-4.5"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-medium text-slate-500 font-mono">Phase 5</span>
+                    <div id="tab-pulse-phase5" class="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse hidden"></div>
+                </div>
+                <h4 class="text-sm font-semibold tracking-tight leading-snug">Control & Testing</h4>
+                <p class="text-[11px] text-slate-500 truncate mt-0.5">Webhook curl checks</p>
+            </div>
+        </button>
+
+        <div class="mt-4 p-4 rounded-xl border border-slate-900 bg-slate-950 text-xs text-slate-400 space-y-2 font-sans">
+            <div class="flex items-center gap-1.5 text-indigo-400 font-semibold">
+                <i data-lucide="help-circle" class="w-3.5 h-3.5"></i>
+                <span>Developer Tip</span>
+            </div>
+            <p class="leading-relaxed text-[11px]">
+                All database state in this dashboard is wired to a <strong>live SQLite instance</strong>.
+                You can verify active licenses in real-time in the live panel!
+            </p>
+        </div>
+    </div>
+
+    <!-- Main Study Material Area -->
+    <div class="flex-1 bg-slate-950 border border-slate-900 rounded-2xl p-6 lg:p-8">
+        
+        <!-- Phase 1 View -->
+        <div id="phase-content-phase1" class="phase-content space-y-6">
+            <div>
+                <span class="text-xs font-semibold bg-indigo-950/70 text-indigo-400 border border-indigo-900/50 px-2.5 py-1 rounded-full font-mono">
+                    PHASE 1.1 — SQLITE DATABASE SCHEMAS
+                </span>
+                <h2 class="text-xl font-bold text-slate-100 tracking-tight mt-3">
+                    Provisioning the SQLite Database & Models
+                </h2>
+                <p class="text-slate-400 text-sm mt-2 leading-relaxed">
+                    Think of the database as a set of structured tables. In this dashboard, Django handles all SQLite model translations automatically using Python object-relational mapping (ORM).
+                </p>
+            </div>
+
+            <div class="space-y-4">
+                <h3 class="text-sm font-semibold text-slate-200 border-b border-slate-900 pb-2">
+                    How Models Look in Python code
+                </h3>
+                
+                <p class="text-slate-400 text-sm leading-relaxed">
+                    Below is the core schema for the <code>Tenant</code> subscription table inside <code>api/models.py</code>:
+                </p>
+            </div>
+
+            <div class="space-y-0.5">
+                <div class="flex justify-between items-center academy-code-header px-4 py-2.5 rounded-t-xl border-t border-x">
+                    <span class="text-xs font-mono">api/models.py</span>
+                    <button onclick="copySnippet('snippet-p1')" class="flex items-center gap-1.5 text-xs transition-colors cursor-pointer">
+                        <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                        <span id="copy-btn-txt-snippet-p1">Copy Code</span>
+                    </button>
+                </div>
+                <pre class="academy-code-pre border rounded-b-xl overflow-x-auto text-xs font-mono leading-relaxed custom-scrollbar whitespace-pre" id="snippet-p1"><code class="language-python">class Tenant(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=255)
+    email = models.EmailField()
+    license_key = models.CharField(max_length=100, unique=True)
+    plan = models.CharField(max_length=100)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    status = models.CharField(max_length=50, default='active')
+    waba_token = models.TextField(blank=True, default='')
+    phone_number_id = models.CharField(max_length=100, blank=True, default='')
+    template_name = models.CharField(max_length=150, default='missed_call_recovery')
+    language_code = models.CharField(max_length=50, default='en_US')
+    calls_count = models.IntegerField(default=0)
+    messages_sent = models.IntegerField(default=0)</code></pre>
+            </div>
+        </div>
+
+        <!-- Phase 2 View -->
+        <div id="phase-content-phase2" class="phase-content space-y-6 hidden">
+            <div>
+                <span class="text-xs font-semibold bg-indigo-950/70 text-indigo-400 border border-indigo-900/50 px-2.5 py-1 rounded-full font-mono">
+                    PHASE 2 — DJANGO ROUTING & VIEWS
+                </span>
+                <h2 class="text-xl font-bold text-slate-100 tracking-tight mt-3">
+                    Configuring Endpoints & View Processors
+                </h2>
+                <p class="text-slate-400 text-sm mt-2 leading-relaxed">
+                    A Django View processes an incoming HTTP requests, performs calculations, communicates with the DB, and dispatches JSON payloads or renders HTML template assets.
+                </p>
+            </div>
+
+            <div class="space-y-4">
+                <h3 class="text-sm font-semibold text-slate-200 border-b border-slate-900 pb-2">
+                    How We Map URLs to Python Views
+                </h3>
+                
+                <p class="text-slate-400 text-sm leading-relaxed">
+                    Below is our clean URL mapping registry config inside <code>api/urls.py</code>:
+                </p>
+            </div>
+
+            <div class="space-y-0.5">
+                <div class="flex justify-between items-center academy-code-header px-4 py-2.5 rounded-t-xl border-t border-x">
+                    <span class="text-xs font-mono">api/urls.py</span>
+                    <button onclick="copySnippet('snippet-p2')" class="flex items-center gap-1.5 text-xs transition-colors cursor-pointer">
+                        <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                        <span id="copy-btn-txt-snippet-p2">Copy Code</span>
+                    </button>
+                </div>
+                <pre class="academy-code-pre border rounded-b-xl overflow-x-auto text-xs font-mono leading-relaxed custom-scrollbar whitespace-pre" id="snippet-p2"><code class="language-python">from django.urls import path
+from . import views
+
+urlpatterns = [
+    path('', views.overview_view, name='overview'),
+    path('tenants/', views.tenants_view, name='tenants'),
+    path('api/call-event/', views.handle_call_event, name='api_call_event'),
+    path('sandbox/run/', views.run_simulation_view, name='run_simulation'),
+]</code></pre>
+            </div>
+        </div>
+
+        <!-- Phase 3 View -->
+        <div id="phase-content-phase3" class="phase-content space-y-6 hidden">
+            <div>
+                <span class="text-xs font-semibold bg-indigo-950/70 text-indigo-400 border border-indigo-900/50 px-2.5 py-1 rounded-full font-mono">
+                    PHASE 3 — EXPIRY VALIDATION SCHEMES
+                </span>
+                <h2 class="text-xl font-bold text-slate-100 tracking-tight mt-3">
+                    Expiry Checking & License Validation Logic
+                </h2>
+                <p class="text-slate-400 text-sm mt-2 leading-relaxed">
+                    When the webhook is triggered, the Django view first checks the tenant's license validity by parsing the active flag and verifying the expiry date in DB.
+                </p>
+            </div>
+
+            <div class="p-4 bg-yellow-955/20 border border-yellow-900/40 rounded-xl space-y-2 text-xs text-yellow-200/80 leading-relaxed">
+                <div class="flex items-center gap-1.5 text-yellow-400 font-bold">
+                    <i data-lucide="shield-alert" class="w-4 h-4"></i>
+                    <span>Secure Validation Architecture</span>
+                </div>
+                <p>
+                    All subscription parameters are isolated on the server. The client mobile app has no way to edit or skip the verification checks, preventing subscription spoofing.
+                </p>
+            </div>
+
+            <div class="space-y-0.5">
+                <div class="flex justify-between items-center academy-code-header px-4 py-2.5 rounded-t-xl border-t border-x">
+                    <span class="text-xs font-mono">validation_rules.py</span>
+                    <button onclick="copySnippet('snippet-p3')" class="flex items-center gap-1.5 text-xs transition-colors cursor-pointer">
+                        <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                        <span id="copy-btn-txt-snippet-p3">Copy Code</span>
+                    </button>
+                </div>
+                <pre class="academy-code-pre border rounded-b-xl overflow-x-auto text-xs font-mono leading-relaxed custom-scrollbar whitespace-pre" id="snippet-p3"><code class="language-python"># Python validation logic
+if tenant.status == 'blocked':
+    return JsonResponse({'ok': False, 'error': 'Tenant blocked'}, status=403)
+
+if tenant.expires_at < timezone.now():
+    tenant.status = 'expired'
+    tenant.save()
+    return JsonResponse({'ok': False, 'error': 'License expired'}, status=403)</code></pre>
+            </div>
+        </div>
+
+        <!-- Phase 4 View -->
+        <div id="phase-content-phase4" class="phase-content space-y-6 hidden">
+            <div>
+                <span class="text-xs font-semibold bg-indigo-950/70 text-indigo-400 border border-indigo-900/50 px-2.5 py-1 rounded-full font-mono">
+                    PHASE 4 — META CLOUD API HOOKS
+                </span>
+                <h2 class="text-xl font-bold text-slate-100 tracking-tight mt-3">
+                    Dispatched Meta Message Firing Actions
+                </h2>
+                <p class="text-slate-400 text-sm mt-2 leading-relaxed">
+                    Once validated, the backend fires a secure request containing template parameters and the user token directly to Meta Cloud API Graph node.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div class="p-3.5 rounded-xl border border-slate-900 bg-slate-900/40 text-xs space-y-1">
+                    <div class="flex items-center gap-1.5 font-bold text-slate-200">
+                        <i data-lucide="key" class="w-3.5 h-3.5 text-indigo-400"></i> Token
+                    </div>
+                    <p class="text-slate-500 leading-relaxed font-sans">Meta System token supplying Auth Headers.</p>
+                </div>
+                <div class="p-3.5 rounded-xl border border-slate-900 bg-slate-900/40 text-xs space-y-1">
+                    <div class="flex items-center gap-1.5 font-bold text-slate-200">
+                        <i data-lucide="clock" class="w-3.5 h-3.5 text-indigo-400"></i> Phone ID
+                    </div>
+                    <p class="text-slate-500 leading-relaxed font-sans">Meta Phone ID acting as messenger node sender.</p>
+                </div>
+                <div class="p-3.5 rounded-xl border border-slate-900 bg-slate-900/40 text-xs space-y-1">
+                    <div class="flex items-center gap-1.5 font-bold text-slate-200">
+                        <i data-lucide="message-square" class="w-3.5 h-3.5 text-indigo-400"></i> Template
+                    </div>
+                    <p class="text-slate-500 leading-relaxed font-sans">Pre-approved layout matched in Meta Developer portal.</p>
+                </div>
+            </div>
+
+            <div class="space-y-0.5">
+                <div class="flex justify-between items-center academy-code-header px-4 py-2.5 rounded-t-xl border-t border-x">
+                    <span class="text-xs font-mono">meta_api_helper.py</span>
+                    <button onclick="copySnippet('snippet-p4')" class="flex items-center gap-1.5 text-xs transition-colors cursor-pointer">
+                        <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                        <span id="copy-btn-txt-snippet-p4">Copy Code</span>
+                    </button>
+                </div>
+                <pre class="academy-code-pre border rounded-b-xl overflow-x-auto text-xs font-mono leading-relaxed custom-scrollbar whitespace-pre" id="snippet-p4"><code class="language-python">import requests
+
+def send_whatsapp_message(phone_id, token, to_phone, template, name):
+    url = f"https://graph.facebook.com/v21.0/{phone_id}/messages"
+    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+    payload = {
+        "messaging_product": "whatsapp",
+        "to": to_phone,
+        "type": "template",
+        "template": {
+            "name": template,
+            "language": {"code": "en_US"},
+            "components": [{"type": "body", "parameters": [{"type": "text", "text": name}]}]
+        }
+    }
+    return requests.post(url, json=payload, headers=headers)</code></pre>
+            </div>
+        </div>
+
+        <!-- Phase 5 View -->
+        <div id="phase-content-phase5" class="phase-content space-y-6 hidden">
+            <div>
+                <span class="text-xs font-semibold bg-indigo-950/70 text-indigo-400 border border-indigo-900/50 px-2.5 py-1 rounded-full font-mono">
+                    PHASE 5 — DEPLOYMENT & SHELL CHECKING
+                </span>
+                <h2 class="text-xl font-bold text-slate-100 tracking-tight mt-3">
+                    Simulating Incoming Mobile Call Events
+                </h2>
+                <p class="text-slate-400 text-sm mt-2 leading-relaxed">
+                    Once operational, external calls can be simulated using raw HTTP Curl strings to test local database verification and network dispatch loops.
+                </p>
+            </div>
+
+            <div class="space-y-0.5">
+                <div class="flex justify-between items-center academy-code-header px-4 py-2.5 rounded-t-xl border-t border-x">
+                    <span class="text-xs font-mono">Terminal Shell Command</span>
+                    <button onclick="copySnippet('snippet-p5')" class="flex items-center gap-1.5 text-xs transition-colors cursor-pointer">
+                        <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                        <span id="copy-btn-txt-snippet-p5">Copy Code</span>
+                    </button>
+                </div>
+                <pre class="academy-code-pre border rounded-b-xl overflow-x-auto text-xs font-mono leading-relaxed custom-scrollbar whitespace-pre" id="snippet-p5"><code class="language-bash">curl -X POST http://127.0.0.1:8000/api/call-event/ \
+  -H "Content-Type: application/json" \
+  -d '{
+    "licenseKey": "LIC-APEX-8821",
+    "callerPhone": "+14155552345",
+    "callerName": "David Miller"
+  }'</code></pre>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- highlight.js for syntax highlighting -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', (event) => {
+        hljs.highlightAll();
+    });
+</script>
+<script>
+    // Toggle active phase documentation tabs
+    function switchTab(phaseId) {
+        // Hide all contents
+        const contents = document.getElementsByClassName('phase-content');
+        for (let i = 0; i < contents.length; i++) {
+            contents[i].classList.add('hidden');
+        }
+        
+        // Deactivate all buttons styling
+        const buttons = document.getElementsByClassName('tab-btn');
+        for (let i = 0; i < buttons.length; i++) {
+            buttons[i].className = "tab-btn flex items-start gap-3 p-3.5 rounded-xl text-left transition-all duration-200 border bg-slate-955 hover:bg-slate-900/50 border-slate-900 text-slate-400 hover:text-slate-200";
+        }
+        
+        // Deactivate all icon boxes styling
+        for (let i = 1; i <= 5; i++) {
+            document.getElementById(`tab-icon-box-phase${i}`).className = "p-2 rounded-lg bg-slate-900 text-slate-500";
+            document.getElementById(`tab-pulse-phase${i}`).classList.add('hidden');
+            
+            // Set text color on parent header
+            const parent = document.getElementById(`tab-btn-phase${i}`);
+            parent.querySelector('h4').className = "text-sm font-semibold tracking-tight leading-snug";
+            parent.querySelector('span').className = "text-xs font-medium text-slate-500 font-mono";
+        }
+
+        // Show selected tab content
+        document.getElementById(`phase-content-${phaseId}`).classList.remove('hidden');
+
+        // Style selected button
+        const activeBtn = document.getElementById(`tab-btn-${phaseId}`);
+        activeBtn.className = "tab-btn flex items-start gap-3 p-3.5 rounded-xl text-left transition-all duration-200 border bg-slate-900 border-indigo-500 text-white shadow-md shadow-indigo-950/40";
+        
+        // Style selected icon box
+        document.getElementById(`tab-icon-box-${phaseId}`).className = "p-2 rounded-lg bg-indigo-600 text-white";
+        document.getElementById(`tab-pulse-${phaseId}`).classList.remove('hidden');
+        
+        activeBtn.querySelector('h4').className = "text-sm font-semibold tracking-tight leading-snug text-slate-100";
+        activeBtn.querySelector('span').className = "text-xs font-medium text-indigo-400 font-mono";
+    }
+
+    // Copy to clipboard helper
+    function copySnippet(elementId) {
+        const text = document.getElementById(elementId).querySelector('code').textContent;
+        navigator.clipboard.writeText(text).then(function() {
+            const btnTxt = document.getElementById(`copy-btn-txt-${elementId}`);
+            btnTxt.textContent = "Copied!";
+            setTimeout(function() {
+                btnTxt.textContent = "Copy Code";
+            }, 2000);
+        });
+    }
+</script>
+{% endblock %}

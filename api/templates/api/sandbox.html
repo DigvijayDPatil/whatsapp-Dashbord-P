@@ -1,0 +1,585 @@
+{% extends 'api/base.html' %}
+
+{% block title %}Simulation Sandbox - WABA Recover{% endblock %}
+
+{% block content %}
+<style>
+    /* Premium style enhancements that respect global themes */
+    .sandbox-card {
+        box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    /* Subtle glow in dark mode, clean hover shadows in light mode */
+    html:not(.light-mode) .sandbox-card {
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.05);
+    }
+    html:not(.light-mode) .sandbox-card:hover {
+        box-shadow: 0 10px 40px -10px rgba(99, 102, 241, 0.15), 0 4px 30px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.07);
+        border-color: rgba(99, 102, 241, 0.25) !important;
+    }
+    html.light-mode .sandbox-card:hover {
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
+        border-color: rgba(99, 102, 241, 0.3) !important;
+    }
+
+    .glow-pulse-status {
+        animation: statusPulse 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    @keyframes statusPulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: .6; transform: scale(0.95); }
+    }
+
+    /* Code/Console Line Styling */
+    .console-line {
+        position: relative;
+        padding-left: 1.25rem;
+        font-family: 'JetBrains Mono', monospace;
+    }
+    .console-line::before {
+        content: ">";
+        position: absolute;
+        left: 0;
+        top: 0;
+        color: #818cf8;
+        font-weight: 700;
+    }
+    .console-line.success::before {
+        color: #34d399;
+    }
+    .console-line.error::before {
+        color: #f87171;
+    }
+    
+    /* Smooth transitions */
+    .transition-premium {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Premium Misty Wave Ring Animation */
+    @keyframes waveExpand {
+        0% { transform: scale(1); opacity: 0.8; }
+        50% { opacity: 0.4; }
+        100% { transform: scale(2.4); opacity: 0; }
+    }
+    .wave-ring {
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+        border: 1.5px solid rgba(99, 102, 241, 0.35);
+        background: radial-gradient(circle, rgba(99, 102, 241, 0.05) 0%, transparent 80%);
+        box-shadow: 0 0 20px rgba(99, 102, 241, 0.22), inset 0 0 10px rgba(99, 102, 241, 0.1);
+        animation: waveExpand 4s cubic-bezier(0.165, 0.84, 0.44, 1) infinite;
+        transform-origin: center;
+        pointer-events: none;
+    }
+    .wave-ring:nth-child(2) {
+        animation-delay: 0.7s;
+    }
+    .wave-ring:nth-child(3) {
+        animation-delay: 1.4s;
+    }
+    .wave-ring:nth-child(4) {
+        animation-delay: 2.1s;
+    }
+    .wave-ring:nth-child(5) {
+        animation-delay: 2.8s;
+    }
+
+    /* Calling icon animation */
+    @keyframes callPulse {
+        0%, 100% { transform: rotate(0deg) scale(1); }
+        10% { transform: rotate(15deg) scale(1.1); }
+        20% { transform: rotate(-15deg) scale(1.1); }
+        30% { transform: rotate(10deg) scale(1.05); }
+        40% { transform: rotate(-10deg) scale(1.05); }
+        50% { transform: rotate(0deg) scale(1); }
+    }
+    .animate-call {
+        animation: callPulse 2s ease-in-out infinite;
+        transform-origin: center;
+    }
+
+    /* Red, yellow, green dot sequential blinking animation */
+    @keyframes dotBlink {
+        0%, 100% { opacity: 0.35; transform: scale(0.95); }
+        50% { opacity: 1; transform: scale(1.05); }
+    }
+    .animate-dot-1 {
+        animation: dotBlink 2.2s infinite ease-in-out;
+        animation-delay: 0s;
+    }
+    .animate-dot-2 {
+        animation: dotBlink 2.2s infinite ease-in-out;
+        animation-delay: 0.4s;
+    }
+    .animate-dot-3 {
+        animation: dotBlink 2.2s infinite ease-in-out;
+        animation-delay: 0.8s;
+    }
+
+</style>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-fade-in">
+    
+    <!-- Configuration Panel -->
+    <div class="bg-slate-950 border border-slate-900 rounded-3xl p-7 space-y-6 sandbox-card transition-premium">
+        <div class="flex items-start gap-4">
+            <div class="p-3 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 rounded-2xl">
+                <i data-lucide="play" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <h2 class="text-lg font-bold text-slate-100 tracking-tight">
+                    Simulator Sandbox Configuration
+                </h2>
+                <p class="text-xs text-slate-400 font-sans mt-0.5">Configure and test licensing states and template responses using mock call triggers.</p>
+            </div>
+        </div>
+
+        <form id="sandbox-form" class="space-y-5">
+            {% csrf_token %}
+            
+            <div class="space-y-2">
+                <label class="text-[10px] font-bold text-slate-400 tracking-wider uppercase flex items-center gap-1.5">
+                    <i data-lucide="shield-check" class="w-3.5 h-3.5 text-indigo-400"></i>
+                    Select Target Tenant / License
+                </label>
+                <div class="relative">
+                    <select id="license_selector" onchange="toggleLicenseInput()" class="w-full text-xs px-4 py-3 bg-slate-900 border border-slate-800/80 rounded-xl text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-premium appearance-none cursor-pointer">
+                        {% for tenant in tenants %}
+                            <option class="bg-slate-950" value="{{ tenant.license_key }}">{{ tenant.name }} ({{ tenant.status|upper }}) - {{ tenant.license_key }}</option>
+                        {% endfor %}
+                        <option class="bg-slate-950" value="custom_value">-- Custom / Invalid License Key --</option>
+                    </select>
+                    <div class="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-slate-500">
+                        <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Custom License Input field -->
+            <div id="custom-license-group" class="space-y-2 hidden animate-slide-down">
+                <label class="text-[10px] font-bold text-slate-400 tracking-wider uppercase flex items-center gap-1.5">
+                    <i data-lucide="key" class="w-3.5 h-3.5 text-indigo-400"></i>
+                    Custom License Key
+                </label>
+                <input type="text" id="custom_license" name="license_key" placeholder="e.g. LIC-INVALID-9900" class="w-full text-xs px-4 py-3 bg-slate-900 border border-slate-800/80 rounded-xl text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-mono transition-premium">
+            </div>
+
+            <div class="space-y-2">
+                <label class="text-[10px] font-bold text-slate-400 tracking-wider uppercase flex items-center gap-1.5">
+                    <i data-lucide="phone-call" class="w-3.5 h-3.5 text-indigo-400"></i>
+                    Simulated Caller Mobile Number
+                </label>
+                <input type="text" id="caller_phone" name="caller_phone" value="+1 (415) 555-2345" required class="w-full text-xs px-4 py-3 bg-slate-900 border border-slate-800/80 rounded-xl text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-mono transition-premium">
+                <p class="text-[10px] text-slate-500 font-sans">Non-digit formatting characters are stripped automatically before transmitting to Meta WABA.</p>
+            </div>
+
+            <div class="space-y-2">
+                <label class="text-[10px] font-bold text-slate-400 tracking-wider uppercase flex items-center gap-1.5">
+                    <i data-lucide="user" class="w-3.5 h-3.5 text-indigo-400"></i>
+                    Simulated Caller Name
+                </label>
+                <input type="text" id="caller_name" name="caller_name" value="David Miller" required class="w-full text-xs px-4 py-3 bg-slate-900 border border-slate-800/80 rounded-xl text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-semibold transition-premium">
+                <p class="text-[10px] text-slate-500 font-sans">Used as variable placeholders inside WhatsApp pre-approved message templates.</p>
+            </div>
+
+            <button type="submit" id="submit-trigger" class="w-full py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-md hover:-translate-y-0.5 transition-premium text-sm mt-6">
+                <i data-lucide="play" class="w-4 h-4"></i>
+                Fire Simulated Call Webhook
+            </button>
+        </form>
+    </div>
+
+    <!-- Live Execution Console -->
+    <div class="bg-slate-950 border border-slate-900 rounded-3xl p-7 flex flex-col justify-between min-h-[480px] sandbox-card transition-premium">
+        
+        <!-- Console Toolbar -->
+        <div class="flex justify-between items-center border-b border-slate-900 pb-4 mb-4">
+            <div class="flex gap-2 text-[10px] font-bold uppercase tracking-wider font-mono">
+                <button id="tab-log-btn" onclick="switchConsoleTab('log')" class="px-3.5 py-2 rounded-lg bg-slate-900 text-indigo-400 border border-indigo-900/30 transition-premium flex items-center gap-1.5 cursor-pointer">
+                    <i data-lucide="terminal" class="w-3.5 h-3.5"></i>
+                    Live Log
+                </button>
+                <button id="tab-json-btn" onclick="switchConsoleTab('json')" class="px-3.5 py-2 rounded-lg text-slate-500 border border-transparent hover:text-slate-350 transition-premium flex items-center gap-1.5 cursor-pointer">
+                    <i data-lucide="code" class="w-3.5 h-3.5"></i>
+                    JSON Payload
+                </button>
+            </div>
+            <div class="flex items-center gap-3">
+                <button onclick="clearConsole()" title="Clear Console" class="p-2 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-950/20 border border-transparent hover:border-rose-900/30 transition-premium cursor-pointer">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </button>
+                <span id="console-status" class="inline-flex items-center gap-1.5 font-mono font-bold text-[10px] tracking-wider text-slate-500 transition-all duration-300">
+                    <span class="relative flex h-1.5 w-1.5">
+                        <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-slate-500/40 opacity-75"></span>
+                        <span class="relative inline-flex h-1.5 w-1.5 rounded-full bg-slate-500/60"></span>
+                    </span>
+                    IDLE
+                </span>
+            </div>
+        </div>
+        
+        <!-- Scrolling Output Area -->
+        <div id="console-output" class="flex-grow overflow-y-auto max-h-[350px] custom-scrollbar">
+            
+            <!-- Tab 1: Console Logs -->
+            <div id="console-log-container" class="space-y-4">
+                <div id="placeholder" class="h-full flex flex-col items-center justify-center text-center py-16">
+                    <div class="relative w-24 h-24 flex items-center justify-center mb-16">
+                        <div class="wave-ring"></div>
+                        <div class="wave-ring"></div>
+                        <div class="wave-ring"></div>
+                        <div class="wave-ring"></div>
+                        <div class="wave-ring"></div>
+                        <div class="relative w-full h-full flex items-center justify-center rounded-full bg-gradient-to-br from-indigo-500/12 via-indigo-950/20 to-slate-950 border border-indigo-500/20 z-10 shadow-lg shadow-indigo-500/5">
+                            <div class="absolute inset-1 rounded-full bg-gradient-to-br from-indigo-400/10 to-violet-500/5"></div>
+                            <!-- Premium Custom SVG Call Icon -->
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-10 h-10 text-indigo-350 relative z-10 animate-call">
+                                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" stroke="url(#phone-gradient)" fill="url(#phone-glow-gradient)"/>
+                                <path d="M14.05 2a9 9 0 0 1 8 8" stroke="url(#phone-gradient)" stroke-linecap="round"/>
+                                <path d="M14.05 6a5 5 0 0 1 4 4" stroke="url(#phone-gradient)" stroke-linecap="round"/>
+                                <defs>
+                                    <linearGradient id="phone-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" stop-color="#818cf8"/>
+                                        <stop offset="100%" stop-color="#c084fc"/>
+                                    </linearGradient>
+                                    <linearGradient id="phone-glow-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" stop-color="rgba(129, 140, 248, 0.18)"/>
+                                        <stop offset="100%" stop-color="rgba(192, 132, 252, 0.05)"/>
+                                    </linearGradient>
+                                </defs>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <h3 class="text-sm font-semibold text-slate-200 tracking-tight">No recent webhook activity</h3>
+                        <p class="max-w-[220px] text-[11px] text-slate-400/80 font-sans mx-auto leading-relaxed">Configure a simulation on the left panel to trigger a test event.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tab 2: Raw Response Payload -->
+            <div id="console-json-container" class="hidden font-mono text-[11px]">
+                <div class="text-slate-400 italic py-6 text-center">No simulation payload active. Trigger the webhook first.</div>
+            </div>
+            
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let currentTab = 'log';
+    let latestJsonPayload = null;
+
+    function toggleLicenseInput() {
+        const selector = document.getElementById('license_selector');
+        const customGroup = document.getElementById('custom-license-group');
+        
+        if (selector.value === 'custom_value') {
+            customGroup.classList.remove('hidden');
+            document.getElementById('custom_license').setAttribute('required', 'true');
+        } else {
+            customGroup.classList.add('hidden');
+            document.getElementById('custom_license').removeAttribute('required');
+        }
+    }
+
+    function switchConsoleTab(tab) {
+        currentTab = tab;
+        const logBtn = document.getElementById('tab-log-btn');
+        const jsonBtn = document.getElementById('tab-json-btn');
+        const logContainer = document.getElementById('console-log-container');
+        const jsonContainer = document.getElementById('console-json-container');
+        
+        if (tab === 'log') {
+            logBtn.className = 'px-3.5 py-2 rounded-lg bg-slate-900 text-indigo-400 border border-indigo-900/30 transition-premium flex items-center gap-1.5 cursor-pointer';
+            jsonBtn.className = 'px-3.5 py-2 rounded-lg text-slate-500 border border-transparent hover:text-slate-350 transition-premium flex items-center gap-1.5 cursor-pointer';
+            logContainer.classList.remove('hidden');
+            jsonContainer.classList.add('hidden');
+        } else {
+            jsonBtn.className = 'px-3.5 py-2 rounded-lg bg-slate-900 text-indigo-400 border border-indigo-900/30 transition-premium flex items-center gap-1.5 cursor-pointer';
+            logBtn.className = 'px-3.5 py-2 rounded-lg text-slate-500 border border-transparent hover:text-slate-350 transition-premium flex items-center gap-1.5 cursor-pointer';
+            jsonContainer.classList.remove('hidden');
+            logContainer.classList.add('hidden');
+        }
+    }
+
+    function clearConsole() {
+        const logContainer = document.getElementById('console-log-container');
+        const jsonContainer = document.getElementById('console-json-container');
+        
+            logContainer.innerHTML = `
+            <div id="placeholder" class="h-full flex flex-col items-center justify-center text-center py-16">
+                <div class="relative w-24 h-24 flex items-center justify-center mb-16">
+                    <div class="wave-ring"></div>
+                    <div class="wave-ring"></div>
+                    <div class="wave-ring"></div>
+                    <div class="wave-ring"></div>
+                    <div class="wave-ring"></div>
+                    <div class="relative w-full h-full flex items-center justify-center rounded-full bg-gradient-to-br from-indigo-500/12 via-indigo-950/20 to-slate-950 border border-indigo-500/20 z-10 shadow-lg shadow-indigo-500/5">
+                        <div class="absolute inset-1 rounded-full bg-gradient-to-br from-indigo-400/10 to-violet-500/5"></div>
+                        <!-- Premium Custom SVG Call Icon -->
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-10 h-10 text-indigo-350 relative z-10 animate-call">
+                            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" stroke="url(#phone-gradient)" fill="url(#phone-glow-gradient)"/>
+                            <path d="M14.05 2a9 9 0 0 1 8 8" stroke="url(#phone-gradient)" stroke-linecap="round"/>
+                            <path d="M14.05 6a5 5 0 0 1 4 4" stroke="url(#phone-gradient)" stroke-linecap="round"/>
+                            <defs>
+                                <linearGradient id="phone-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="#818cf8"/>
+                                    <stop offset="100%" stop-color="#c084fc"/>
+                                </linearGradient>
+                                <linearGradient id="phone-glow-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="rgba(129, 140, 248, 0.18)"/>
+                                    <stop offset="100%" stop-color="rgba(192, 132, 252, 0.05)"/>
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <h3 class="text-sm font-semibold text-slate-200 tracking-tight">No recent webhook activity</h3>
+                    <p class="max-w-[220px] text-[11px] text-slate-400/80 font-sans mx-auto leading-relaxed">Configure a simulation on the left panel to trigger a test event.</p>
+                </div>
+            </div>
+        `;
+        latestJsonPayload = null;
+        jsonContainer.innerHTML = `
+            <div class="text-slate-400 italic py-6 text-center">No simulation payload active. Trigger the webhook first.</div>
+        `;
+        
+        const consoleStatus = document.getElementById('console-status');
+        consoleStatus.className = 'inline-flex items-center gap-1.5 font-mono font-bold text-[10px] tracking-wider text-slate-500 transition-all duration-300';
+        consoleStatus.innerHTML = `
+            <span class="relative flex h-1.5 w-1.5">
+                <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-slate-500/40 opacity-75"></span>
+                <span class="relative inline-flex h-1.5 w-1.5 rounded-full bg-slate-500/60"></span>
+            </span>
+            IDLE
+        `;
+        
+        switchConsoleTab('log');
+        lucide.createIcons();
+    }
+
+    document.getElementById('sandbox-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const selector = document.getElementById('license_selector');
+        let licenseKey = selector.value;
+        if (licenseKey === 'custom_value') {
+            licenseKey = document.getElementById('custom_license').value;
+        }
+        
+        const callerPhone = document.getElementById('caller_phone').value;
+        const callerName = document.getElementById('caller_name').value;
+        const submitBtn = document.getElementById('submit-trigger');
+        const logContainer = document.getElementById('console-log-container');
+        const consoleStatus = document.getElementById('console-status');
+        
+        // Setup console UI state
+        submitBtn.disabled = true;
+        
+        const placeholder = document.getElementById('placeholder');
+        if (placeholder) {
+            placeholder.remove();
+        }
+        logContainer.innerHTML = '';
+        
+        consoleStatus.className = 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full font-mono font-bold text-[10px] tracking-wider bg-gradient-to-r from-indigo-500 to-indigo-600 text-white shadow-lg shadow-indigo-500/25 glow-pulse-status';
+        consoleStatus.innerHTML = `
+            <span class="relative flex h-1.5 w-1.5">
+                <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-white/40 opacity-75"></span>
+                <span class="relative inline-flex h-1.5 w-1.5 rounded-full bg-white/70"></span>
+            </span>
+            RUNNING
+        `;
+        
+        switchConsoleTab('log');
+        
+        appendConsoleLine('info', `[${new Date().toLocaleTimeString()}] Initiating sandbox simulation...`);
+        appendConsoleLine('info', `Payload: { licenseKey: "${licenseKey}", callerPhone: "${callerPhone}", callerName: "${callerName}" }`);
+        
+        const formData = new FormData();
+        formData.append('license_key', licenseKey);
+        formData.append('caller_phone', callerPhone);
+        formData.append('caller_name', callerName);
+        
+        fetch("{% url 'run_simulation' %}", {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json().then(data => ({ status: response.status, ok: response.ok, body: data })))
+        .then(res => {
+            submitBtn.disabled = false;
+            
+            const timestamp = new Date().toLocaleTimeString();
+            if (res.ok && res.body.ok) {
+                consoleStatus.className = 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full font-mono font-bold text-[10px] tracking-wider bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg shadow-emerald-500/25';
+                consoleStatus.innerHTML = `
+                    <span class="relative flex h-1.5 w-1.5">
+                        <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-white/40 opacity-75"></span>
+                        <span class="relative inline-flex h-1.5 w-1.5 rounded-full bg-white/70"></span>
+                    </span>
+                    SUCCESS
+                `;
+                
+                appendConsoleLine('success', `[${timestamp}] API returned Status ${res.status} (Accepted)`);
+                appendConsoleLine('success', `Execution Latency: ${res.body.data.durationMs}ms | SLA Status: ${res.body.data.slaStatus}`);
+                appendConsoleLine('success', `Response details: ${res.body.data.details}`);
+            } else {
+                consoleStatus.className = 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full font-mono font-bold text-[10px] tracking-wider bg-gradient-to-r from-rose-500 to-rose-600 text-white shadow-lg shadow-rose-500/25';
+                consoleStatus.innerHTML = `
+                    <span class="relative flex h-1.5 w-1.5">
+                        <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-white/40 opacity-75"></span>
+                        <span class="relative inline-flex h-1.5 w-1.5 rounded-full bg-white/70"></span>
+                    </span>
+                    FAILED
+                `;
+                
+                appendConsoleLine('error', `[${timestamp}] Execution failed with Status ${res.status}`);
+                if (res.body.data && res.body.data.message) {
+                    appendConsoleLine('error', `Details: ${res.body.data.message}`);
+                } else if (res.body.error) {
+                    appendConsoleLine('error', `Details: ${res.body.error}`);
+                }
+            }
+            
+            // Print raw JSON response
+            appendJsonBlock(res.body);
+            lucide.createIcons();
+        })
+        .catch(err => {
+            submitBtn.disabled = false;
+            consoleStatus.className = 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full font-mono font-bold text-[10px] tracking-wider bg-gradient-to-r from-rose-500 to-rose-600 text-white shadow-lg shadow-rose-500/25';
+            consoleStatus.innerHTML = `
+                <span class="relative flex h-1.5 w-1.5">
+                    <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-white/40 opacity-75"></span>
+                    <span class="relative inline-flex h-1.5 w-1.5 rounded-full bg-white/70"></span>
+                </span>
+                ERROR
+            `;
+            appendConsoleLine('error', `Local network request exception: ${err}`);
+            lucide.createIcons();
+        });
+    });
+
+    function appendConsoleLine(type, text) {
+        const consoleBox = document.getElementById('console-log-container');
+        const div = document.createElement('div');
+        let borderClass = 'border-indigo-500/50 text-slate-350';
+        if (type === 'success') borderClass = 'border-emerald-500/50 text-emerald-350';
+        if (type === 'error') borderClass = 'border-rose-500/50 text-rose-350';
+        
+        div.className = `console-line pl-3.5 border-l-2 ${borderClass} text-xs leading-relaxed`;
+        div.textContent = text;
+        consoleBox.appendChild(div);
+        
+        const scrollParent = document.getElementById('console-output');
+        scrollParent.scrollTop = scrollParent.scrollHeight;
+    }
+
+    function appendJsonBlock(data) {
+        latestJsonPayload = data;
+        const jsonContainer = document.getElementById('console-json-container');
+        jsonContainer.innerHTML = '';
+        
+        const wrapper = document.createElement('div');
+        wrapper.className = 'rounded-2xl border border-slate-900/60 bg-black overflow-hidden mt-3 shadow-2xl shadow-black/85';
+        
+        // Window Header
+        const header = document.createElement('div');
+        header.className = 'flex items-center justify-between px-4 py-2.5 bg-[#0a0b10] border-b border-slate-900 select-none';
+        header.innerHTML = `
+            <div class="flex items-center gap-4">
+                <div class="flex gap-1.5">
+                    <span class="w-2.5 h-2.5 rounded-full bg-rose-500/80 border border-rose-600/10 animate-dot-1"></span>
+                    <span class="w-2.5 h-2.5 rounded-full bg-amber-500/80 border border-amber-600/10 animate-dot-2"></span>
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500/80 border border-emerald-600/10 animate-dot-3"></span>
+                </div>
+                <div class="flex items-center gap-2 px-3 py-1 bg-[#12131a] border border-slate-900 rounded-lg text-xs font-mono">
+                    <i data-lucide="braces" class="w-3.5 h-3.5 text-indigo-400 animate-pulse"></i>
+                    <span style="color: #cbd5e1 !important;">response.json</span>
+                </div>
+            </div>
+        `;
+        
+        // Relative container for absolute floating copy button placement
+        const codeAreaContainer = document.createElement('div');
+        codeAreaContainer.className = 'relative group';
+
+        const floatCopyBtn = document.createElement('button');
+        floatCopyBtn.id = 'copy-btn';
+        floatCopyBtn.onclick = copyJsonToClipboard;
+        floatCopyBtn.className = 'absolute top-3 right-3 text-slate-500 hover:text-slate-200 transition-all duration-200 cursor-pointer z-10 border-0 bg-transparent p-1 focus:outline-none';
+        floatCopyBtn.title = 'Copy Response JSON';
+        floatCopyBtn.innerHTML = '<i data-lucide="copy" class="w-4 h-4"></i>';
+
+        // Code Content (syntax highlighted)
+        const codeArea = document.createElement('pre');
+        codeArea.className = 'p-5 overflow-x-auto font-mono text-[10px] leading-relaxed custom-scrollbar max-h-[300px] bg-black';
+        codeArea.style.setProperty('color', '#94a3b8', 'important');
+        codeArea.innerHTML = syntaxHighlightJson(data);
+        
+        codeAreaContainer.appendChild(floatCopyBtn);
+        codeAreaContainer.appendChild(codeArea);
+
+        wrapper.appendChild(header);
+        wrapper.appendChild(codeAreaContainer);
+        jsonContainer.appendChild(wrapper);
+    }
+
+    function syntaxHighlightJson(json) {
+        if (typeof json !== 'string') {
+            json = JSON.stringify(json, null, 2);
+        }
+        json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+            let cls = 'text-amber-400'; // Default number
+            if (/^"/.test(match)) {
+                if (/:$/.test(match)) {
+                    cls = 'text-indigo-300 font-semibold'; // Key
+                } else {
+                    cls = 'text-emerald-400'; // String
+                }
+            } else if (/true|false/.test(match)) {
+                cls = 'text-rose-400 font-bold'; // Boolean
+            } else if (/null/.test(match)) {
+                cls = 'text-slate-500 italic'; // Null
+            }
+            if (cls.includes('text-indigo-300')) {
+                const keyName = match.slice(0, -1);
+                return `<span class="${cls}">${keyName}</span>:`;
+            }
+            return `<span class="${cls}">${match}</span>`;
+        });
+    }
+
+    function copyJsonToClipboard() {
+        if (!latestJsonPayload) return;
+        const text = JSON.stringify(latestJsonPayload, null, 2);
+        navigator.clipboard.writeText(text).then(() => {
+            const btn = document.getElementById('copy-btn');
+            const originalHTML = btn.innerHTML;
+            
+            btn.innerHTML = '<i data-lucide="check" class="w-4 h-4 text-emerald-400"></i>';
+            btn.className = 'absolute top-3 right-3 text-emerald-400 transition-all duration-200 cursor-pointer z-10 border-0 bg-transparent p-1 focus:outline-none';
+            
+            lucide.createIcons();
+            setTimeout(() => {
+                btn.innerHTML = originalHTML;
+                btn.className = 'absolute top-3 right-3 text-slate-500 hover:text-slate-200 transition-all duration-200 cursor-pointer z-10 border-0 bg-transparent p-1 focus:outline-none';
+                lucide.createIcons();
+            }, 2000);
+        }).catch(err => {
+            console.error('Failed to copy JSON: ', err);
+        });
+    }
+</script>
+{% endblock %}

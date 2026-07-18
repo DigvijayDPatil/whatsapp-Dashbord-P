@@ -1,0 +1,298 @@
+{% extends 'api/base.html' %}
+
+{% block title %}System Settings - WABA Recover{% endblock %}
+
+{% block content %}
+
+<!-- Error / Notification Messages -->
+{% if messages %}
+<div class="mb-6 space-y-2">
+    {% for message in messages %}
+    <div class="p-4 bg-rose-500/10 border border-rose-500/25 rounded-2xl flex items-start gap-3 text-rose-400 animate-shake">
+        <i data-lucide="alert-circle" class="w-4 h-4 shrink-0 mt-0.5"></i>
+        <div class="text-[11px] font-semibold leading-relaxed">{{ message }}</div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-fade-in text-xs">
+    
+    <!-- Maintenance Actions Card -->
+    <div class="bg-slate-950 border border-slate-900 rounded-2xl p-6 space-y-6 flex flex-col">
+        <h3 class="text-md font-bold text-slate-100 tracking-tight flex items-center gap-1.5 border-b border-slate-900 pb-3">
+            <i data-lucide="database" class="w-5 h-5 text-indigo-400"></i>
+            Database Seeding & Flushing
+        </h3>
+        
+        <div class="bg-slate-900/30 border border-slate-900 rounded-xl p-5 space-y-4">
+            <h4 class="font-bold text-slate-200 text-sm">Flush & Reseed Core Database</h4>
+            <p class="text-slate-500 leading-relaxed">This utility deletes all existing tenants, licenses, messages history, and logs, then imports clean fresh data from <code>data.json</code>.</p>
+            <form id="seed-form" method="POST" action="{% url 'seed_db' %}">
+                {% csrf_token %}
+                <input type="hidden" name="confirm_password" id="seed-password-input">
+                <button type="button" onclick="openConfirmModal('seed-form', 'CONFIRM DATABASE WIPE', 'Are you sure you want to delete all subscribers, licenses, logs, and settings? This action is irreversible.', 'Wipe & Reseed', 'database')" class="w-full py-2 bg-rose-650 hover:bg-rose-550 text-white font-semibold rounded-lg flex items-center justify-center gap-1.5 cursor-pointer shadow-lg shadow-rose-950/40 hover:-translate-y-0.5 transition-all text-xs">
+                    <i data-lucide="alert-triangle" class="w-4 h-4"></i>
+                    Wipe Database & Reseed Defaults
+                </button>
+            </form>
+        </div>
+
+        <div class="bg-slate-900/30 border border-slate-900 rounded-xl p-5 space-y-4">
+            <h4 class="font-bold text-slate-200 text-sm">Clear System Console Logs</h4>
+            <p class="text-slate-500 leading-relaxed">Flushes only the system boot and transaction console logs database stream, leaving license keys and call histories intact.</p>
+            <form id="clear-logs-form" method="POST" action="{% url 'clear_system_logs' %}">
+                {% csrf_token %}
+                <input type="hidden" name="confirm_password" id="clear-logs-password-input">
+                <button type="button" onclick="openConfirmModal('clear-logs-form', 'CONFIRM LOG PURGE', 'Are you sure you want to flush all system console logs? This will reset the logs buffer stream.', 'Purge Logs', 'trash-2')" class="w-full py-2 bg-rose-650 hover:bg-rose-550 text-white font-semibold rounded-lg flex items-center justify-center gap-1.5 cursor-pointer shadow-lg shadow-rose-950/40 hover:-translate-y-0.5 transition-all text-xs">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    Flush Server Console Logs
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- DB Stats Info Card -->
+    <div class="bg-slate-950 border border-slate-900 rounded-2xl p-6 flex flex-col justify-between space-y-6">
+        <h3 class="text-md font-bold text-slate-100 tracking-tight flex items-center gap-1.5 border-b border-slate-900 pb-3">
+            <i data-lucide="activity" class="w-5 h-5 text-indigo-400"></i>
+            Database Registry Health
+        </h3>
+        
+        <div class="space-y-3">
+            <div class="flex justify-between items-center p-3 bg-slate-900/20 border border-slate-900 rounded-lg">
+                <span class="text-slate-400 font-semibold">Active Tenant Accounts</span>
+                <span class="font-bold font-mono text-slate-200 text-sm">{{ tenants_count }}</span>
+            </div>
+            
+            <div class="flex justify-between items-center p-3 bg-slate-900/20 border border-slate-900 rounded-lg">
+                <span class="text-slate-400 font-semibold">Logged Call Events</span>
+                <span class="font-bold font-mono text-slate-200 text-sm">{{ calls_count }}</span>
+            </div>
+
+            <div class="flex justify-between items-center p-3 bg-slate-900/20 border border-slate-900 rounded-lg">
+                <span class="text-slate-400 font-semibold">System Console Logs Buffer</span>
+                <span class="font-bold font-mono text-slate-200 text-sm">{{ logs_count }} / 100</span>
+            </div>
+        </div>
+
+        <div class="bg-indigo-950/20 border border-indigo-900/40 p-5 rounded-xl leading-relaxed text-slate-400 font-sans space-y-2 mt-auto">
+            <strong class="text-indigo-300 font-bold text-xs flex items-center gap-1">
+                <i data-lucide="info" class="w-4 h-4 shrink-0"></i> Meta Cloud Integration Node
+            </strong>
+            <p>API updates are automatically queued and processed asynchronously. The local database isolates tenant license checks before routing messages to Meta servers to protect endpoints from spam.</p>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let activeFormId = null;
+
+function openConfirmModal(formId, title, desc, submitText, iconName) {
+    activeFormId = formId;
+    
+    // Set text contents
+    document.getElementById('modal-title').textContent = title;
+    document.getElementById('modal-desc').textContent = desc;
+    document.getElementById('modal-submit-btn').textContent = submitText;
+    
+    // Set icon
+    const iconEl = document.getElementById('modal-icon');
+    iconEl.setAttribute('data-lucide', iconName);
+    
+    // Reset password and error message
+    document.getElementById('modal-password').value = '';
+    document.getElementById('modal-error').classList.add('hidden');
+    
+    // Reset states
+    document.getElementById('modal-form-state').classList.remove('hidden');
+    document.getElementById('modal-loading-state').classList.add('hidden');
+    
+    // Render the icon using lucide
+    lucide.createIcons();
+    
+    // Show modal container
+    const modal = document.getElementById('confirm-modal');
+    modal.classList.remove('hidden');
+    
+    // Focus password input
+    setTimeout(() => {
+        document.getElementById('modal-password').focus();
+    }, 100);
+}
+
+function closeConfirmModal() {
+    const modal = document.getElementById('confirm-modal');
+    modal.classList.add('hidden');
+    activeFormId = null;
+}
+
+// Handle submit validation and AJAX execution
+document.getElementById('modal-submit-btn').addEventListener('click', function() {
+    const password = document.getElementById('modal-password').value;
+    const errorEl = document.getElementById('modal-error');
+    
+    if (!password || password.trim() === '') {
+        errorEl.textContent = 'Password verification failed: Password cannot be empty.';
+        errorEl.classList.remove('hidden');
+        return;
+    }
+    
+    if (!activeFormId) return;
+    
+    const form = document.getElementById(activeFormId);
+    const actionUrl = form.getAttribute('action');
+    const csrfToken = form.querySelector('input[name="csrfmiddlewaretoken"]').value;
+    
+    // Grab state elements
+    const formState = document.getElementById('modal-form-state');
+    const loadingState = document.getElementById('modal-loading-state');
+    const loadingIcon = document.getElementById('loading-state-icon');
+    const loadingTitle = document.getElementById('loading-state-title');
+    const loadingStep = document.getElementById('loading-state-step');
+    const progressBar = document.getElementById('loading-progress-bar');
+    const linesContainer = document.getElementById('terminal-flow-lines');
+    
+    // Configure loading details based on action
+    const isWipe = activeFormId === 'seed-form';
+    loadingIcon.setAttribute('data-lucide', isWipe ? 'database' : 'trash-2');
+    loadingTitle.textContent = isWipe ? 'WIPING & SEEDING DATABASE' : 'FLUSHING CONSOLE LOGS';
+    
+    formState.classList.add('hidden');
+    loadingState.classList.remove('hidden');
+    lucide.createIcons();
+    
+    // Progress Bar Animation (Continuous Loop)
+    progressBar.style.width = '0%';
+    progressBar.classList.remove('bg-emerald-500');
+    progressBar.classList.add('bg-indigo-500');
+    
+    let currentProgress = 0;
+    const progressInterval = setInterval(() => {
+        if (currentProgress < 95) {
+            currentProgress += 1.2;
+            progressBar.style.width = currentProgress + '%';
+            
+            // Update step labels
+            if (currentProgress < 20) {
+                loadingStep.textContent = 'Verifying credentials...';
+            } else if (currentProgress < 50) {
+                loadingStep.textContent = isWipe ? 'Purging database records...' : 'Clearing console logs...';
+            } else if (currentProgress < 85) {
+                loadingStep.textContent = isWipe ? 'Seeding default records...' : 'Rebuilding log registers...';
+            } else {
+                loadingStep.textContent = 'Finalizing reload...';
+            }
+        }
+    }, 30);
+    
+    // Initialize scrolling terminal lines animation
+    linesContainer.innerHTML = '';
+    const terminalLines = isWipe ? [
+        'SYSTEM: Initializing workspace reset sequence...',
+        'AUTH: Administrator token validated successfully.',
+        'WIPE: Purging subscriber tenants table...',
+        'WIPE: Dropping call event logs tables...',
+        'WIPE: Clearing console log stream records...',
+        'SEED: Restoring core schema from data.json...',
+        'SEED: Restoring subscriber: meta-node-prod... OK',
+        'SEED: Restoring subscriber: tenant-demo-node... OK',
+        'SEED: Regenerating developer license keys...',
+        'SYSTEM: Rebuilding index tables structure...',
+        'SUCCESS: Database reseeded successfully.'
+    ] : [
+        'SYSTEM: Initializing logs purge sequence...',
+        'AUTH: Administrator credentials verified.',
+        'PURGE: Fetching active console buffer registers...',
+        'DELETE: Clearing log ID #91823... OK',
+        'DELETE: Clearing log ID #91824... OK',
+        'DELETE: Clearing log ID #91825... OK',
+        'DELETE: Clearing log ID #91826... OK',
+        'SYSTEM: Flushing console buffer registers...',
+        'SUCCESS: Console log stream cleared successfully.'
+    ];
+    
+    let lineIdx = 0;
+    function printTerminalLines() {
+        if (lineIdx < terminalLines.length) {
+            const line = document.createElement('div');
+            let styledText = terminalLines[lineIdx];
+            
+            // Customize label colors in terminal feed
+            styledText = styledText
+                .replace('SUCCESS:', '<span class="text-emerald-400 font-bold">SUCCESS:</span>')
+                .replace('SYSTEM:', '<span class="text-indigo-400 font-bold">SYSTEM:</span>')
+                .replace('AUTH:', '<span class="text-violet-400 font-bold">AUTH:</span>')
+                .replace('WIPE:', '<span class="text-rose-400 font-bold">WIPE:</span>')
+                .replace('DELETE:', '<span class="text-rose-400 font-bold">DELETE:</span>')
+                .replace('SEED:', '<span class="text-amber-400 font-bold">SEED:</span>')
+                .replace('PURGE:', '<span class="text-amber-400 font-bold">PURGE:</span>');
+                
+            line.innerHTML = `&gt; ${styledText}`;
+            linesContainer.appendChild(line);
+            
+            // Keep scrolled to bottom
+            linesContainer.parentElement.scrollTop = linesContainer.parentElement.scrollHeight;
+            
+            lineIdx++;
+            const delay = 1500 / terminalLines.length;
+            setTimeout(printTerminalLines, delay);
+        }
+    }
+    setTimeout(printTerminalLines, 200);
+    
+    // Make backend request
+    const formData = new FormData();
+    formData.append('confirm_password', password);
+    formData.append('csrfmiddlewaretoken', csrfToken);
+    
+    fetch(actionUrl, {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json'
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            clearInterval(progressInterval);
+            progressBar.style.width = '100%';
+            loadingStep.textContent = 'SUCCESS! RELOADING SYSTEM...';
+            progressBar.classList.remove('bg-indigo-500');
+            progressBar.classList.add('bg-emerald-500');
+            
+            setTimeout(() => {
+                window.location.reload();
+            }, 1200);
+        } else {
+            clearInterval(progressInterval);
+            loadingState.classList.add('hidden');
+            formState.classList.remove('hidden');
+            errorEl.textContent = data.message || 'Incorrect administrator password.';
+            errorEl.classList.remove('hidden');
+        }
+    })
+    .catch(err => {
+        clearInterval(progressInterval);
+        console.error(err);
+        loadingState.classList.add('hidden');
+        formState.classList.remove('hidden');
+        errorEl.textContent = 'A system communication error occurred.';
+        errorEl.classList.remove('hidden');
+    });
+});
+
+// Also support Enter key submission in password field
+document.getElementById('modal-password').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        document.getElementById('modal-submit-btn').click();
+    }
+});
+</script>
+{% endblock %}
