@@ -10,6 +10,7 @@ class Tenant(models.Model):
     ]
     STATUS_CHOICES = [
         ('active', 'active'),
+        ('pending', 'pending'),
         ('expired', 'expired'),
         ('blocked', 'blocked'),
     ]
@@ -29,8 +30,13 @@ class Tenant(models.Model):
     calls_count = models.IntegerField(default=0)
     messages_sent = models.IntegerField(default=0)
 
+    @property
+    def is_pending(self):
+        return not self.license_key or self.license_key == 'PENDING_SETUP' or self.license_key.startswith('PENDING_')
+
     def __str__(self):
         return f"{self.name} ({self.license_key})"
+
 
 class CallEventLogQuerySet(models.QuerySet):
     def sla_passes(self):
@@ -89,3 +95,18 @@ class ServerConsoleLog(models.Model):
 
     def __str__(self):
         return f"[{self.level.upper()}] {self.message[:50]}"
+
+class PaymentRecord(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name='payments')
+    razorpay_order_id = models.CharField(max_length=100, unique=True)
+    razorpay_payment_id = models.CharField(max_length=100, blank=True, default='')
+    razorpay_signature = models.CharField(max_length=255, blank=True, default='')
+    plan = models.CharField(max_length=20)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    status = models.CharField(max_length=20, default='created')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.tenant.name} - {self.plan} (₹{self.amount}) [{self.status}]"
+

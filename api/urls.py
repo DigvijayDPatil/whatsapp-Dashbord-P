@@ -6,8 +6,12 @@ urlpatterns = [
     # Auth
     path('login/', views.login_view, name='login'),
     path('register/', views.register_view, name='register'),
+    path('register', views.register_view),
     path('logout/', views.logout_view, name='logout'),
     path('forgot-password/', views.forgot_password_view, name='forgot_password'),
+
+
+
 
     # Pages
     path('', views.overview_view, name='overview'),
@@ -23,7 +27,10 @@ urlpatterns = [
     path('settings/clear-logs/', views.clear_system_logs_view, name='clear_system_logs'),
     path('settings/seed-db/', views.seed_db_view, name='seed_db'),
     path('qa/', views.qa_view, name='qa'),
+    path('plans/', views.plans_view, name='plans'),
+    path('user-dashboard/', views.user_dashboard_view, name='user_dashboard'),
     path('academy/', RedirectView.as_view(url='/qa/', permanent=True)),
+
     
     # APIs & Webhooks
     path('sandbox/run/', views.run_simulation_view, name='run_simulation'),
@@ -35,4 +42,9 @@ urlpatterns = [
     path('api/webhook/status/', views.handle_meta_status_webhook, name='api_webhook_status_slash'),
     path('api/latest-status/', views.latest_status_view, name='latest_status'),
     path('api/overview-data/', views.overview_data_view, name='overview_data'),
+
+    # Razorpay Payment Endpoints
+    path('api/create-razorpay-order/', views.create_razorpay_order_view, name='create_razorpay_order'),
+    path('api/verify-razorpay-payment/', views.verify_razorpay_payment_view, name='verify_razorpay_payment'),
 ]
+

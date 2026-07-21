@@ -1,0 +1,624 @@
+{% extends 'api/base.html' %}
+
+{% block title %}My User Dashboard - Customer Portal{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* User Dashboard Light Mode Overrides */
+    html.light-mode .portal-card {
+        background-color: #ffffff !important;
+        background-image: none !important;
+        border-color: #e2e8f0 !important;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05) !important;
+        color: #0f172a !important;
+    }
+    html.light-mode .portal-title {
+        color: #0f172a !important;
+    }
+    html.light-mode .portal-desc {
+        color: #475569 !important;
+    }
+    html.light-mode .portal-border {
+        border-color: #e2e8f0 !important;
+    }
+    html.light-mode .portal-subtext {
+        color: #64748b !important;
+    }
+    html.light-mode .portal-stat-val {
+        color: #0f172a !important;
+    }
+    html.light-mode .portal-input {
+        background-color: #f8fafc !important;
+        border-color: #cbd5e1 !important;
+        color: #0f172a !important;
+    }
+
+    /* License Widget Light Mode Overrides */
+    html.light-mode .license-widget-card {
+        background: #f8fafc !important;
+        background-image: none !important;
+        border-color: #cbd5e1 !important;
+        box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04) !important;
+    }
+    html.light-mode .license-label {
+        color: #475569 !important;
+    }
+    html.light-mode .license-key-text {
+        color: #4338ca !important;
+    }
+    html.light-mode .license-expiry-text {
+        color: #0f172a !important;
+    }
+    html.light-mode .license-border {
+        border-color: #cbd5e1 !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-8 animate-fade-in">
+    
+    {% if not tenant %}
+    <!-- Alert if Logged-in user is not matched to an active Tenant record -->
+    <div class="portal-card bg-slate-950 border border-slate-900 rounded-3xl p-8 sm:p-12 text-center max-w-xl mx-auto space-y-6 shadow-2xl my-8">
+        <div class="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center mx-auto shadow-lg shadow-amber-500/10">
+            <i data-lucide="shield-alert" class="w-8 h-8"></i>
+        </div>
+        <div class="space-y-2">
+            <h2 class="portal-title text-xl font-bold text-slate-100">No Active Subscription Found</h2>
+            <p class="portal-desc text-xs text-slate-400 leading-relaxed">
+                Your user account <span class="text-indigo-400 font-mono font-bold">{{ request.user.email }}</span> is not currently linked to an active subscriber license (or your subscription was removed by the administrator).
+            </p>
+        </div>
+        <div class="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+            {% if request.user.is_superuser %}
+            <a href="{% url 'overview' %}" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-indigo-600/30 transition-all flex items-center justify-center gap-2">
+                <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+                <span>Go to SuperAdmin Console</span>
+            </a>
+            {% else %}
+            <a href="{% url 'plans' %}" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-indigo-600/30 transition-all flex items-center justify-center gap-2">
+                <i data-lucide="credit-card" class="w-4 h-4"></i>
+                <span>Browse Subscription Plans</span>
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    {% else %}
+
+    <!-- Top Welcome & License Summary Banner -->
+    <div class="portal-card bg-gradient-to-r from-slate-950 via-indigo-955/40 to-slate-950 border border-indigo-500/30 rounded-2xl p-6 sm:p-8 relative overflow-hidden shadow-xl">
+        <div class="absolute -right-12 -top-12 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            <div class="space-y-3">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-semibold uppercase tracking-wider font-mono">
+                    <i data-lucide="user-check" class="w-3.5 h-3.5"></i>
+                    <span>Subscriber Dashboard</span>
+                </div>
+                <div>
+                    <h1 class="portal-title text-2xl sm:text-3xl font-black text-slate-100 tracking-tight">Welcome, {{ tenant.name }}</h1>
+                    <p class="portal-desc text-slate-400 text-xs sm:text-sm mt-1">Manage your license key, WhatsApp integration settings, and live webhook delivery activity.</p>
+                </div>
+            </div>
+
+            <!-- License Key Card Widget -->
+            <div class="license-widget-card bg-slate-900/80 border border-indigo-500/40 rounded-2xl p-5 shrink-0 min-w-[280px] shadow-lg backdrop-blur-sm space-y-3">
+                <div class="flex items-center justify-between text-xs">
+                    <span class="license-label font-mono uppercase text-[10px] tracking-wider text-slate-400 font-bold">License Key</span>
+                    <span class="px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase font-mono {% if tenant.is_pending %}bg-amber-955/80 text-amber-400 border border-amber-800/50{% elif tenant.status == 'active' %}bg-emerald-955/80 text-emerald-400 border border-emerald-800/50{% else %}bg-rose-955/80 text-rose-400 border border-rose-800/50{% endif %}">
+                        {% if tenant.is_pending %}PENDING SETUP{% else %}{{ tenant.status }}{% endif %}
+                    </span>
+                </div>
+                {% if tenant.is_pending %}
+                <div class="text-xs font-mono font-bold text-amber-400 py-1">
+                    Fill in WABA info below to Generate Key
+                </div>
+                {% else %}
+                <div onclick="copyLicenseKey('{{ tenant.license_key }}', this)" class="inline-flex items-center gap-2 cursor-pointer group/key select-none" title="Click to copy license key">
+                    <span class="license-key-text text-xl font-black text-indigo-400 font-mono tracking-tight group-hover/key:text-indigo-300 transition-colors">{{ tenant.license_key }}</span>
+                    <i data-lucide="copy" class="w-4 h-4 text-slate-500 group-hover/key:text-indigo-400 transition-colors"></i>
+                </div>
+                {% endif %}
+                <div class="license-border pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px]">
+                    <span class="license-label text-slate-400">Plan ({% if tenant.is_pending or not tenant.plan %}0{% else %}{{ tenant.plan|title }}{% endif %}):</span>
+
+                    <span class="license-expiry-text font-mono text-slate-200 font-semibold">{% if tenant.is_pending or not tenant.plan %}Pending Setup{% else %}Expires {{ tenant.expires_at|date:"M d, Y" }}{% endif %}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Statistics Grid (4 Key Metrics) -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        <!-- Active Subscription Plan -->
+        <div class="portal-card bg-slate-950 border border-slate-900 p-5 rounded-2xl space-y-2 shadow-lg">
+            <div class="flex justify-between items-center text-slate-500">
+                <span class="text-xs font-bold uppercase tracking-wider portal-subtext text-slate-400 font-mono">Plan Tier</span>
+                <i data-lucide="crown" class="w-4 h-4 text-indigo-400"></i>
+            </div>
+            <div class="portal-stat-val text-2xl font-black font-mono text-indigo-400 tracking-tight">{% if tenant.is_pending or not tenant.plan %}0{% else %}{{ tenant.plan|title }}{% endif %}</div>
+            <div class="text-[10px] portal-subtext text-slate-500 font-mono">{% if tenant.is_pending or not tenant.plan %}Select Plan Below{% else %}Renews: {{ tenant.expires_at|date:"Y-m-d" }}{% endif %}</div>
+        </div>
+
+
+
+        <!-- Missed Calls Captured -->
+        <div class="portal-card bg-slate-950 border border-slate-900 p-5 rounded-2xl space-y-2 shadow-lg">
+            <div class="flex justify-between items-center text-slate-500">
+                <span class="text-xs font-bold uppercase tracking-wider portal-subtext text-slate-400 font-mono">Calls Captured</span>
+                <i data-lucide="smartphone" class="w-4 h-4 text-blue-400"></i>
+            </div>
+            <div class="portal-stat-val text-2xl font-black font-mono text-blue-400 tracking-tight">{{ tenant.calls_count }}</div>
+            <div class="text-[10px] portal-subtext text-slate-500 font-mono">Mobile Ingress Triggers</div>
+        </div>
+
+        <!-- WhatsApp Sent -->
+        <div class="portal-card bg-slate-950 border border-slate-900 p-5 rounded-2xl space-y-2 shadow-lg">
+            <div class="flex justify-between items-center text-slate-500">
+                <span class="text-xs font-bold uppercase tracking-wider portal-subtext text-slate-400 font-mono">WhatsApp Sent</span>
+                <i data-lucide="send" class="w-4 h-4 text-teal-400"></i>
+            </div>
+            <div class="portal-stat-val text-2xl font-black font-mono text-teal-400 tracking-tight">{{ tenant.messages_sent }}</div>
+            <div class="text-[10px] portal-subtext text-slate-500 font-mono">Delivered via Meta Cloud</div>
+        </div>
+
+        <!-- SLA Pass Rate % -->
+        <div class="portal-card bg-slate-950 border border-slate-900 p-5 rounded-2xl space-y-2 shadow-lg">
+            <div class="flex justify-between items-center text-slate-500">
+                <span class="text-xs font-bold uppercase tracking-wider portal-subtext text-slate-400 font-mono">SLA Pass Rate</span>
+                <i data-lucide="gauge" class="w-4 h-4 text-emerald-400"></i>
+            </div>
+            <div class="portal-stat-val text-2xl font-black font-mono text-emerald-400 tracking-tight">{{ sla_percentage }}%</div>
+            <div class="text-[10px] portal-subtext text-slate-500 font-mono">Sub-3000ms Delivery</div>
+        </div>
+    </div>
+
+    <!-- Main Content Area: WABA Settings Form + Recent Call Logs -->
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-8 w-full min-w-0">
+
+        
+        <!-- Left: WhatsApp Meta Configuration Form (1 col) -->
+        <div class="portal-card bg-slate-950 border border-slate-900 rounded-2xl p-6 space-y-5 shadow-lg flex flex-col justify-between">
+            <div>
+                <div class="flex items-center gap-2 border-b border-slate-900 portal-border pb-3">
+                    <i data-lucide="settings" class="w-4 h-4 text-indigo-400"></i>
+                    <h3 class="portal-title text-sm font-bold text-slate-100 uppercase tracking-wider font-mono">My WABA Integration</h3>
+                </div>
+                <p class="portal-desc text-xs text-slate-400 mt-2 leading-relaxed">Fill in your official Meta WhatsApp Cloud API credentials to generate and activate your License Key.</p>
+
+                <form method="POST" action="{% url 'user_dashboard' %}" class="space-y-4 mt-4">
+                    {% csrf_token %}
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase font-mono">Plan Duration</label>
+                        <select name="plan" id="plan-duration-select" required class="portal-input w-full text-xs px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-slate-100 font-mono focus:outline-none focus:border-indigo-500 cursor-pointer">
+                            {% if tenant.is_pending or not tenant.plan %}
+                            <option value="" disabled {% if not selected_plan %}selected{% endif %}>-- Select Subscription Plan --</option>
+                            {% endif %}
+
+                            {% if tenant.is_pending or not tenant.plan or tenant.plan == '1-month' %}
+                            <option value="1-month" {% if tenant.plan == '1-month' and not tenant.is_pending %}disabled{% endif %} {% if selected_plan == '1-month' or tenant.plan == '1-month' and not tenant.is_pending %}selected{% endif %}>1-Month License Plan (₹999) {% if tenant.plan == '1-month' and not tenant.is_pending %}— Currently Active{% endif %}</option>
+                            {% endif %}
+
+                            {% if tenant.is_pending or not tenant.plan or tenant.plan == '1-month' or tenant.plan == '3-month' %}
+                            <option value="3-month" {% if tenant.plan == '3-month' and not tenant.is_pending %}disabled{% endif %} {% if selected_plan == '3-month' or tenant.plan == '3-month' and not tenant.is_pending %}selected{% endif %}>3-Month License Plan (₹2,499) {% if tenant.plan == '3-month' and not tenant.is_pending %}— Currently Active{% endif %}</option>
+                            {% endif %}
+
+                            {% if tenant.is_pending or not tenant.plan or tenant.plan == '1-month' or tenant.plan == '3-month' or tenant.plan == '6-month' %}
+                            <option value="6-month" {% if tenant.plan == '6-month' and not tenant.is_pending %}disabled{% endif %} {% if selected_plan == '6-month' or tenant.plan == '6-month' and not tenant.is_pending %}selected{% endif %}>6-Month License Plan (₹4,999) {% if tenant.plan == '6-month' and not tenant.is_pending %}— Currently Active{% endif %}</option>
+                            {% endif %}
+
+                            <option value="12-month" {% if tenant.plan == '12-month' and not tenant.is_pending %}disabled{% endif %} {% if selected_plan == '12-month' or tenant.plan == '12-month' and not tenant.is_pending %}selected{% endif %}>12-Month License Plan (₹8,999) {% if tenant.plan == '12-month' and not tenant.is_pending %}— Currently Active (Highest Tier){% endif %}</option>
+                        </select>
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase font-mono">Phone Number ID</label>
+                        <input type="text" name="phone_number_id" value="{% if tenant.is_pending %}{% else %}{{ tenant.phone_number_id }}{% endif %}" placeholder="e.g. 109552145399" required inputmode="numeric" pattern="[0-9]+" oninput="this.value = this.value.replace(/[^0-9]/g, '')" title="Please enter numbers only" class="portal-input w-full text-xs px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-slate-100 font-mono focus:outline-none focus:border-indigo-500">
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase font-mono">Template Name</label>
+                        <input type="text" name="template_name" value="{{ tenant.template_name|default:'' }}" placeholder="e.g. missed_call_recovery" required class="portal-input w-full text-xs px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-slate-100 font-mono focus:outline-none focus:border-indigo-500">
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase font-mono">Language Code</label>
+                        <input type="text" name="language_code" value="{{ tenant.language_code|default:'' }}" placeholder="e.g. en_US" required class="portal-input w-full text-xs px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-slate-100 font-mono focus:outline-none focus:border-indigo-500">
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase font-mono">System WABA Bearer Token</label>
+                        <textarea name="waba_token" rows="3" placeholder="e.g. EAAG9zZA89ZA0IB..." required class="portal-input w-full text-xs p-3 bg-slate-900 border border-slate-800 rounded-xl text-slate-100 font-mono focus:outline-none focus:border-indigo-500 select-all">{{ tenant.waba_token }}</textarea>
+                    </div>
+
+                    <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-800/80 portal-border">
+                        <a href="{% url 'user_dashboard' %}" class="cancel-btn h-10 px-5 text-xs font-semibold text-slate-400 hover:text-slate-200 bg-slate-900 hover:bg-slate-800 rounded-xl border border-slate-800 inline-flex items-center justify-center transition-all select-none shrink-0">
+                            Cancel
+                        </a>
+                        <button type="button" onclick="initiateRazorpayPayment(event)" class="flex-1 h-10 px-5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-emerald-600/20 hover:shadow-emerald-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap">
+                            <i data-lucide="credit-card" class="w-4 h-4 shrink-0"></i>
+                            <span id="pay-btn-text">{% if tenant.is_pending %}Proceed to Pay & Activate{% else %}Pay & Upgrade Plan{% endif %}</span>
+                        </button>
+                    </div>
+                    </div>
+
+
+
+
+                </form>
+            </div>
+        </div>
+
+<!-- Plan Selection Confirmation Modal -->
+<div id="confirm-plan-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4 transition-all">
+    <div class="relative bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-5">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div class="flex items-center gap-2 text-indigo-400">
+                <i data-lucide="shield-check" class="w-5 h-5"></i>
+                <h3 class="font-bold text-sm text-slate-100 font-mono">Confirm Subscription Selection</h3>
+            </div>
+            <button type="button" onclick="closeConfirmModal()" class="text-slate-400 hover:text-slate-200 cursor-pointer">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <div class="space-y-3">
+            <p class="text-xs text-slate-300 leading-relaxed">
+                Please review your selected subscription details before proceeding to payment:
+            </p>
+            <div class="bg-slate-955 border border-slate-800/80 rounded-xl p-4 space-y-2.5 font-mono text-xs">
+                <div class="flex justify-between text-slate-400">
+                    <span>Selected Plan:</span>
+                    <span id="modal-plan-name" class="font-bold text-slate-100">1-Month License Plan</span>
+                </div>
+                <div class="flex justify-between text-slate-400">
+                    <span>Duration:</span>
+                    <span id="modal-plan-duration" class="text-slate-200">30 Days</span>
+                </div>
+                <div class="flex justify-between text-slate-400 pt-2 border-t border-slate-800">
+                    <span class="font-bold text-slate-200">Total Payable:</span>
+                    <span id="modal-plan-price" class="font-black text-emerald-400 text-base">₹999</span>
+                </div>
+            </div>
+            <p class="text-[11px] text-slate-400 italic">
+                * Payment will be processed securely via Razorpay. Your license key & WABA integration will activate immediately.
+            </p>
+        </div>
+
+        <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+            <button type="button" onclick="closeConfirmModal()" class="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-slate-200 bg-slate-800 hover:bg-slate-700 rounded-xl transition-all cursor-pointer">
+                Cancel
+            </button>
+            <button type="button" onclick="executeRazorpayPayment()" class="px-5 py-2 text-xs font-bold text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 rounded-xl shadow-lg shadow-emerald-600/20 transition-all flex items-center gap-2 cursor-pointer">
+                <i data-lucide="credit-card" class="w-4 h-4"></i>
+                <span>Confirm & Proceed to Pay</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Custom Premium Notification / Alert Modal -->
+<div id="custom-alert-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-slate-955/85 backdrop-blur-md p-4 transition-all">
+    <div class="relative bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-sm w-full shadow-2xl space-y-4 text-center">
+        <div id="alert-icon-container" class="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center mx-auto shadow-inner">
+            <i id="alert-icon" data-lucide="alert-triangle" class="w-6 h-6"></i>
+        </div>
+        <div class="space-y-1">
+            <h3 id="alert-title" class="text-sm font-bold text-slate-100 font-mono uppercase tracking-wider">Notice</h3>
+            <p id="alert-message" class="text-xs text-slate-300 leading-relaxed font-sans pt-1">
+                Alert details...
+            </p>
+        </div>
+        <div class="pt-2">
+            <button type="button" id="alert-ok-btn" onclick="closeCustomAlert()" class="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-indigo-600/30 transition-all cursor-pointer">
+                <span id="alert-btn-text">Understand</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+const planDetailsMap = {
+    '1-month': { name: '1-Month License Plan', duration: '30 Days', price: '₹999' },
+    '3-month': { name: '3-Month License Plan', duration: '90 Days', price: '₹2,499' },
+    '6-month': { name: '6-Month License Plan', duration: '180 Days', price: '₹4,999' },
+    '12-month': { name: '12-Month License Plan', duration: '365 Days', price: '₹8,999' }
+};
+
+const activeTenantPlan = "{% if not tenant.is_pending %}{{ tenant.plan }}{% else %}{% endif %}";
+let currentSelectedPlan = '1-month';
+let alertCallback = null;
+
+
+function showCustomAlert(title, message, type = 'warning', callback = null) {
+    alertCallback = callback;
+    const modal = document.getElementById('custom-alert-modal');
+    const iconContainer = document.getElementById('alert-icon-container');
+    const iconEl = document.getElementById('alert-icon');
+    const titleEl = document.getElementById('alert-title');
+    const messageEl = document.getElementById('alert-message');
+    const btnTextEl = document.getElementById('alert-btn-text');
+
+    titleEl.textContent = title;
+    messageEl.textContent = message;
+
+    if (type === 'success') {
+        iconContainer.className = 'w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto shadow-inner';
+        iconEl.setAttribute('data-lucide', 'check-circle-2');
+        if (btnTextEl) btnTextEl.textContent = 'Continue';
+    } else if (type === 'error') {
+        iconContainer.className = 'w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center mx-auto shadow-inner';
+        iconEl.setAttribute('data-lucide', 'x-circle');
+        if (btnTextEl) btnTextEl.textContent = 'Dismiss';
+    } else {
+        iconContainer.className = 'w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center mx-auto shadow-inner';
+        iconEl.setAttribute('data-lucide', 'alert-triangle');
+        if (btnTextEl) btnTextEl.textContent = 'Understand';
+    }
+
+
+    if (window.lucide) {
+        window.lucide.createIcons();
+    }
+
+    if (modal) {
+        modal.classList.remove('hidden');
+    } else {
+        alert(title + ": " + message);
+        if (callback) callback();
+    }
+}
+
+function closeCustomAlert() {
+    const modal = document.getElementById('custom-alert-modal');
+    if (modal) modal.classList.add('hidden');
+    if (alertCallback) {
+        const cb = alertCallback;
+        alertCallback = null;
+        cb();
+    }
+}
+
+function initiateRazorpayPayment(e) {
+    if (e) e.preventDefault();
+
+    const form = document.querySelector('form[action="{% url 'user_dashboard' %}"]');
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+    }
+
+    const planSelect = document.getElementById('plan-duration-select');
+    currentSelectedPlan = planSelect ? planSelect.value : '1-month';
+
+    if (!currentSelectedPlan) {
+        showCustomAlert('Select Plan', 'Please select a Plan Duration before proceeding to payment.', 'warning');
+        return;
+    }
+
+    if (activeTenantPlan && currentSelectedPlan === activeTenantPlan) {
+        const details = planDetailsMap[currentSelectedPlan] || { name: currentSelectedPlan };
+        showCustomAlert('Active Subscription', `You are currently subscribed to the ${details.name}. Please select a different plan to upgrade.`, 'warning');
+        return;
+    }
+
+    const details = planDetailsMap[currentSelectedPlan] || { name: currentSelectedPlan, duration: '-', price: '-' };
+    document.getElementById('modal-plan-name').textContent = details.name;
+    document.getElementById('modal-plan-duration').textContent = details.duration;
+    document.getElementById('modal-plan-price').textContent = details.price;
+
+    const modal = document.getElementById('confirm-plan-modal');
+    if (modal) {
+        modal.classList.remove('hidden');
+    } else {
+        executeRazorpayPayment();
+    }
+}
+
+function closeConfirmModal() {
+    const modal = document.getElementById('confirm-plan-modal');
+    if (modal) modal.classList.add('hidden');
+}
+
+function executeRazorpayPayment() {
+    closeConfirmModal();
+    const form = document.querySelector('form[action="{% url 'user_dashboard' %}"]');
+    const payBtnText = document.getElementById('pay-btn-text');
+    if (payBtnText) payBtnText.textContent = 'Creating Order...';
+
+    // 1. Create Razorpay Order
+    fetch('{% url "create_razorpay_order" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: 'plan_duration=' + encodeURIComponent(currentSelectedPlan)
+    })
+    .then(async res => {
+        const text = await res.text();
+        try {
+            return JSON.parse(text);
+        } catch (err) {
+            console.error("Server response error:", text);
+            throw new Error('Server returned invalid response (' + res.status + ')');
+        }
+    })
+    .then(data => {
+        if (data.status !== 'success') {
+            showCustomAlert('Order Error', data.message || 'Failed to initiate payment.', 'error');
+            if (payBtnText) payBtnText.textContent = 'Proceed to Pay & Activate';
+            return;
+        }
+
+        // 2. Launch Razorpay Checkout Modal
+        var options = {
+            "key": data.key_id,
+            "amount": data.amount,
+            "currency": data.currency || "INR",
+            "order_id": data.order_id,
+            "name": "WABA Recover",
+            "description": currentSelectedPlan.toUpperCase() + " License Subscription",
+            "prefill": {
+                "name": data.business_name || '',
+                "email": data.business_email || '',
+                "contact": data.business_phone || ''
+            },
+            "theme": {
+                "color": "#059669"
+            },
+            "retry": {
+                "enabled": true
+            },
+            "handler": function (response) {
+                if (payBtnText) payBtnText.textContent = 'Verifying Payment...';
+                
+                const getVal = (selector) => {
+                    const el = form.querySelector(selector);
+                    return el ? el.value : '';
+                };
+
+                // 3. Verify Payment Signature & Activate Key
+                const payload = {
+                    razorpay_order_id: response.razorpay_order_id,
+                    razorpay_payment_id: response.razorpay_payment_id,
+                    razorpay_signature: response.razorpay_signature,
+                    phone_number_id: getVal('[name="phone_number_id"]'),
+                    waba_token: getVal('[name="waba_token"]'),
+                    template_name: getVal('[name="template_name"]'),
+                    language_code: getVal('[name="language_code"]')
+                };
+
+                fetch('{% url "verify_razorpay_payment" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify(payload)
+                })
+                .then(r => r.json())
+                .then(verifyData => {
+                    if (verifyData.status === 'success') {
+                        showCustomAlert(
+                            'Payment Successful',
+                            '🎉 Payment Successful! Your Subscription is now ACTIVE.\nLicense Key: ' + verifyData.license_key,
+                            'success',
+                            function() { window.location.reload(); }
+                        );
+                    } else {
+                        showCustomAlert('Verification Error', verifyData.message, 'error');
+                        if (payBtnText) payBtnText.textContent = 'Proceed to Pay & Activate';
+                    }
+                })
+                .catch(err => {
+                    showCustomAlert('Network Error', 'Network error verifying payment.', 'error');
+                    if (payBtnText) payBtnText.textContent = 'Proceed to Pay & Activate';
+                });
+            },
+            "modal": {
+                "escape": true,
+                "backdropclose": false,
+                "confirm_close": true,
+                "ondismiss": function() {
+                    if (payBtnText) payBtnText.textContent = 'Proceed to Pay & Activate';
+                }
+            }
+        };
+
+        var rzp = new Razorpay(options);
+        rzp.on('payment.failed', function (response) {
+            console.error("Razorpay Payment Failed:", response.error);
+            showCustomAlert('Payment Failed', response.error.description || 'Transaction declined. Please select Card or another method.', 'error');
+            if (payBtnText) payBtnText.textContent = 'Proceed to Pay & Activate';
+        });
+        rzp.open();
+    })
+    .catch(err => {
+        showCustomAlert('Initialization Error', err.message || 'Failed to connect to server.', 'error');
+        if (payBtnText) payBtnText.textContent = 'Proceed to Pay & Activate';
+    });
+}
+</script>
+
+
+
+
+
+        <!-- Right: Filtered Activity Logs Table (2 cols) -->
+        <div class="xl:col-span-2 portal-card bg-slate-950 border border-slate-900 rounded-2xl p-5 sm:p-6 space-y-5 shadow-lg min-w-0">
+            <div class="flex items-center justify-between border-b border-slate-900 portal-border pb-3">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="history" class="w-4 h-4 text-indigo-400"></i>
+                    <h3 class="portal-title text-sm font-bold text-slate-100 uppercase tracking-wider font-mono">My Recent Call Activity</h3>
+                </div>
+                <a href="{% url 'history' %}" class="text-[10px] text-indigo-400 font-bold hover:underline flex items-center gap-1">
+                    <span>View All History</span>
+                    <i data-lucide="chevron-right" class="w-3 h-3"></i>
+                </a>
+            </div>
+
+            <div class="w-full overflow-hidden">
+                <table class="w-full text-left border-collapse text-xs table-fixed">
+                    <thead>
+                        <tr class="border-b border-slate-900 portal-border text-[10px] text-slate-400 font-mono uppercase font-bold">
+                            <th class="py-2.5 px-2 w-[22%]">Timestamp</th>
+                            <th class="py-2.5 px-2 w-[26%]">Caller Phone</th>
+                            <th class="py-2.5 px-2 w-[16%]">Status</th>
+                            <th class="py-2.5 px-2 w-[14%]">Latency</th>
+                            <th class="py-2.5 px-2 w-[22%]">Delivery</th>
+                        </tr>
+                    </thead>
+
+                    <tbody class="divide-y divide-slate-900/60 portal-border text-slate-300">
+                        {% for log in recent_history %}
+                        <tr class="hover:bg-slate-900/40 transition-colors">
+                            <td class="py-3 px-2 font-mono text-[11px] text-slate-400 truncate" title="{{ log.timestamp|date:'M d, H:i:s' }}">{{ log.timestamp|date:"M d, H:i" }}</td>
+                            <td class="py-3 px-2 font-mono text-indigo-300 font-bold text-[11px] truncate" title="{{ log.caller_phone }}">{{ log.caller_phone }}</td>
+                            <td class="py-3 px-2">
+                                {% if log.status == 'success' %}
+                                    <span class="px-2 py-0.5 rounded text-[9px] font-bold uppercase font-mono bg-emerald-955/80 text-emerald-400 border border-emerald-800/50">Success</span>
+                                {% elif log.status == 'simulated' %}
+                                    <span class="px-2 py-0.5 rounded text-[9px] font-bold uppercase font-mono bg-teal-955/80 text-teal-400 border border-teal-800/50">Simulated</span>
+                                {% else %}
+                                    <span class="px-2 py-0.5 rounded text-[9px] font-bold uppercase font-mono bg-rose-955/80 text-rose-400 border border-rose-800/50">{{ log.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="py-3 px-2 font-mono text-[11px] text-slate-300 truncate">{{ log.duration_ms }} ms</td>
+                            <td class="py-3 px-2">
+                                {% if "Meta accepted message" in log.details or "fired successfully" in log.details %}
+                                    <span data-tooltip="{{ log.details|escapejs }}" class="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded text-[10.5px] font-medium cursor-pointer truncate max-w-full">Meta Cloud</span>
+                                {% elif "retried without params" in log.details %}
+                                    <span data-tooltip="{{ log.details|escapejs }}" class="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded text-[10.5px] font-medium cursor-pointer truncate max-w-full">Fallback</span>
+                                {% elif "SIMULATED" in log.details %}
+                                    <span data-tooltip="{{ log.details|escapejs }}" class="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 rounded text-[10.5px] font-medium cursor-pointer truncate max-w-full">Sandbox</span>
+                                {% else %}
+                                    <span data-tooltip="{{ log.details|escapejs }}" class="inline-flex items-center gap-1 px-2 py-0.5 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded text-[10.5px] font-medium cursor-pointer truncate max-w-full">Failed</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+
+
+
+
+
+
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="py-8 text-center text-slate-500 italic text-xs">No call logs captured yet for your license key. Fire a webhook simulation to populate.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    {% endif %}
+
+</div>
+{% endblock %}

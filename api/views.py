@@ -2,23 +2,28 @@ import os
 import json
 import uuid
 import datetime
+from datetime import timedelta
+
 import calendar
 import time
 import requests
 import random
 import re
+import razorpay
 from django.shortcuts import render, redirect, get_object_or_404
+
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
-from django.http import HttpResponse, JsonResponse, Http404
+from django.http import HttpResponse, JsonResponse, Http404, HttpResponseForbidden
 from django.db.models import Sum, Count, Q, Avg
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 
-from .models import Tenant, CallEventLog, ServerConsoleLog
+from .models import Tenant, CallEventLog, ServerConsoleLog, PaymentRecord
+
 
 # Helper to add console logs
 def add_system_log(level, message, phase=None, explanation=None):
@@ -34,6 +39,13 @@ def add_system_log(level, message, phase=None, explanation=None):
         ids_to_keep = ServerConsoleLog.objects.order_by('-timestamp')[:100].values_list('id', flat=True)
         ServerConsoleLog.objects.exclude(id__in=ids_to_keep).delete()
     return log
+
+def get_user_tenant(user):
+    """Returns the Tenant record for non-superusers, or None for superusers."""
+    if user and user.is_authenticated and not user.is_superuser:
+        return Tenant.objects.filter(email__iexact=user.email).first() or Tenant.objects.first()
+    return None
+
 
 # Precision month adder
 def add_months(sourcedate, months):
@@ -391,11 +403,17 @@ def overview_view(request):
 @login_required
 def tenants_view(request):
     migrate_existing_data_if_needed()
+    user_tenant = get_user_tenant(request.user)
+
     
     if request.method == 'POST':
+        if not request.user.is_superuser:
+            return HttpResponseForbidden("SuperAdmin access required to register new subscribers.")
+
+            
         # Add new tenant
         name = request.POST.get('name')
-        email = request.POST.get('email')
+        email = request.POST.get('email', '').strip()
         plan = request.POST.get('plan')
         waba_token = request.POST.get('waba_token', '').strip()
         phone_number_id = request.POST.get('phone_number_id', '').strip()
@@ -435,6 +453,14 @@ def tenants_view(request):
                 status='active'
             )
 
+            # Auto-create user account if not exists
+            if not User.objects.filter(email__iexact=email).exists():
+                clean_username = re.sub(r'[^a-zA-Z0-9_]', '', name.lower().replace(' ', '_'))[:20] or "user"
+                if User.objects.filter(username=clean_username).exists():
+                    clean_username = f"{clean_username}_{random.randint(100, 999)}"
+                User.objects.create_user(username=clean_username, email=email, password='Password123!')
+                add_system_log('info', f"Auto-created subscriber login account '{clean_username}' for {email}")
+
             add_system_log(
                 'info',
                 f'Registered Tenant "{name}" with License Key: {license_key}',
@@ -444,12 +470,18 @@ def tenants_view(request):
             sync_db_to_data_json()
             return redirect('tenants')
 
-    tenants = Tenant.objects.all().order_by('-created_at')
+    if user_tenant:
+        tenants = Tenant.objects.filter(id=user_tenant.id)
+    else:
+        tenants = Tenant.objects.all().order_by('-created_at')
+
     context = {
         'active_page': 'tenants',
         'tenants': tenants,
+        'user_tenant': user_tenant,
     }
     return render(request, 'api/tenants.html', context)
+
 
 
 @login_required
@@ -460,6 +492,10 @@ def tenant_edit_waba_view(request, pk):
     except Tenant.DoesNotExist:
         raise Http404("Tenant not found")
         
+    user_tenant = get_user_tenant(request.user)
+    if user_tenant and user_tenant.id != tenant.id:
+        return HttpResponseForbidden("You can only modify your own WABA settings.")
+
     if request.method == 'POST':
         tenant.waba_token = request.POST.get('waba_token', '').strip()
         tenant.phone_number_id = request.POST.get('phone_number_id', '').strip()
@@ -479,6 +515,8 @@ def tenant_edit_waba_view(request, pk):
 
 @login_required
 def tenant_toggle_block_view(request, pk):
+    if not request.user.is_superuser:
+        return HttpResponseForbidden("SuperAdmin privileges required.")
     migrate_existing_data_if_needed()
     try:
         tenant = Tenant.objects.get(id=pk)
@@ -499,6 +537,8 @@ def tenant_toggle_block_view(request, pk):
 
 @login_required
 def tenant_extend_view(request, pk):
+    if not request.user.is_superuser:
+        return HttpResponseForbidden("SuperAdmin privileges required.")
     migrate_existing_data_if_needed()
     try:
         tenant = Tenant.objects.get(id=pk)
@@ -534,96 +574,105 @@ def tenant_extend_view(request, pk):
 
 @login_required
 def tenant_delete_view(request, pk):
+    if not request.user.is_superuser:
+        return HttpResponseForbidden("SuperAdmin privileges required.")
     migrate_existing_data_if_needed()
     try:
         tenant = Tenant.objects.get(id=pk)
     except Tenant.DoesNotExist:
-        if request.headers.get('x-requested-with') == 'XMLHttpRequest' or 'application/json' in request.headers.get('Accept', ''):
-            return JsonResponse({'success': False, 'message': 'Tenant not found.'})
-        raise Http404("Tenant not found")
+        return JsonResponse({'success': False, 'message': 'Tenant not found or already deleted.'}, status=404)
         
     if request.method == 'POST':
         confirm_password = request.POST.get('confirm_password', '')
-        is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest' or 'application/json' in request.headers.get('Accept', '')
         
         if request.user.check_password(confirm_password):
             name = tenant.name
             license_key = tenant.license_key
+            tenant_email = tenant.email
             
             # Cascade delete all call logs associated with this license key
             CallEventLog.objects.filter(license_key=license_key).delete()
+            
+            # Delete matching User login account(s)
+            deleted_users_count = User.objects.filter(email__iexact=tenant_email, is_superuser=False).delete()[0]
+            
             tenant.delete()
             
             add_system_log(
                 'info',
-                f'Permanently deleted Tenant record: "{name}" and cleared all associated call logs.',
+                f'Permanently deleted Tenant record "{name}" ({tenant_email}) and removed {deleted_users_count} associated user login account(s).',
                 'Phase 2: Core Server Engine'
             )
             sync_db_to_data_json()
-            
-            if is_ajax:
-                return JsonResponse({'success': True})
-            return redirect('tenants')
+            return JsonResponse({'success': True})
         else:
-            if is_ajax:
-                return JsonResponse({'success': False, 'message': 'Incorrect administrator password.'})
-            from django.contrib import messages
-            messages.error(request, "Deletion aborted: Incorrect password.")
-            return redirect('tenants')
+            return JsonResponse({'success': False, 'message': 'Incorrect administrator password entered. Please try again.'}, status=400)
             
     return redirect('tenants')
+
 
 
 @login_required
 def history_view(request):
     migrate_existing_data_if_needed()
-    history = CallEventLog.objects.all().order_by('-timestamp')
+    user_tenant = get_user_tenant(request.user)
+    if user_tenant:
+        history = CallEventLog.objects.filter(license_key=user_tenant.license_key).order_by('-timestamp')
+    else:
+        history = CallEventLog.objects.all().order_by('-timestamp')
     context = {
         'active_page': 'history',
         'history': history,
+        'user_tenant': user_tenant,
     }
     return render(request, 'api/history.html', context)
 
 
 @login_required
 def seed_history_view(request):
+    migrate_existing_data_if_needed()
+    user_tenant = get_user_tenant(request.user)
+
     if request.method == 'POST':
         suffix = ''.join(random.choices('abcdefghijklmnopqrstuvwxyz0123456789', k=5))
         now = timezone.now()
         
+        target_license_key = user_tenant.license_key if (user_tenant and user_tenant.license_key) else 'LIC-DEMO-9900'
+        target_name = user_tenant.name if user_tenant else 'Apex Car Rentals'
+
         dummy_logs = [
             {
                 'id': f"tx_98s21a_{suffix}",
                 'timestamp': now - datetime.timedelta(minutes=4),
-                'license_key': 'LIC-APEX-8821',
-                'tenant_name': 'Apex Car Rentals',
+                'license_key': target_license_key,
+                'tenant_name': target_name,
                 'caller_phone': '+14155552671',
                 'caller_name': 'Sarah Jenkins',
                 'status': 'simulated',
                 'duration_ms': 242,
-                'details': 'SIMULATED: Mock seed history entry. No actual message was sent.'
+                'details': f'SIMULATED: Mock seed history entry for {target_name}.'
             },
             {
                 'id': f"tx_12f90b_{suffix}",
                 'timestamp': now - datetime.timedelta(minutes=15),
-                'license_key': 'LIC-APEX-8821',
-                'tenant_name': 'Apex Car Rentals',
+                'license_key': target_license_key,
+                'tenant_name': target_name,
                 'caller_phone': '+13125559082',
                 'caller_name': 'Marcus Vance',
                 'status': 'simulated',
                 'duration_ms': 195,
-                'details': 'SIMULATED: Mock seed history entry. No actual message was sent.'
+                'details': f'SIMULATED: Mock seed history entry for {target_name}.'
             },
             {
                 'id': f"tx_44f12z_{suffix}",
                 'timestamp': now - datetime.timedelta(minutes=32),
-                'license_key': 'LIC-PRIME-4402',
-                'tenant_name': 'Prime Real Estate Group',
+                'license_key': target_license_key,
+                'tenant_name': target_name,
                 'caller_phone': '+16505557711',
                 'caller_name': 'Elizabeth Holmes',
-                'status': 'expired',
-                'duration_ms': 45,
-                'details': 'License plan exceeded subscription duration. Blocked and forced account expiration.'
+                'status': 'simulated',
+                'duration_ms': 180,
+                'details': f'SIMULATED: Mock seed history entry for {target_name}.'
             }
         ]
 
@@ -635,34 +684,49 @@ def seed_history_view(request):
                 
         add_system_log(
             'info',
-            f'Seeded {created_count} call logs successfully into history.',
+            f'Seeded {created_count} call logs successfully for "{target_name}".',
             'Phase 5: Super Admin Control Console'
         )
+        sync_db_to_data_json()
+        return redirect('history')
+
     return redirect('history')
+
 
 
 @login_required
 def sandbox_view(request):
     migrate_existing_data_if_needed()
-    tenants = Tenant.objects.all().order_by('name')
+    user_tenant = get_user_tenant(request.user)
+    if user_tenant:
+        tenants = Tenant.objects.filter(id=user_tenant.id)
+    else:
+        tenants = Tenant.objects.all().order_by('name')
     context = {
         'active_page': 'sandbox',
         'tenants': tenants,
+        'user_tenant': user_tenant,
     }
     return render(request, 'api/sandbox.html', context)
 
 
-# AJAX sandbox execution trigger
+
 @csrf_exempt
 @login_required
 def run_simulation_view(request):
     if request.method == 'POST':
-        license_key = request.POST.get('license_key')
+        user_tenant = get_user_tenant(request.user)
+        if user_tenant:
+            license_key = user_tenant.license_key
+        else:
+            license_key = request.POST.get('license_key')
+
         caller_phone = request.POST.get('caller_phone', '+1 (415) 555-2345')
         caller_name = request.POST.get('caller_name', 'David Miller')
 
         if not license_key:
             return JsonResponse({'error': 'Please select or enter a license key'}, status=400)
+
 
         # Trigger internal webhook handler locally / internally
         # We can construct the call request directly to handle_call_event endpoint functionality
@@ -895,6 +959,8 @@ def settings_view(request):
 
 @login_required
 def clear_system_logs_view(request):
+    if not request.user.is_superuser:
+        return HttpResponseForbidden("SuperAdmin privileges required.")
     if request.method == 'POST':
         confirm_password = request.POST.get('confirm_password', '')
         is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest' or 'application/json' in request.headers.get('Accept', '')
@@ -918,6 +984,8 @@ def clear_system_logs_view(request):
 
 @login_required
 def seed_db_view(request):
+    if not request.user.is_superuser:
+        return HttpResponseForbidden("SuperAdmin privileges required.")
     if request.method == 'POST':
         confirm_password = request.POST.get('confirm_password', '')
         is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest' or 'application/json' in request.headers.get('Accept', '')
@@ -939,12 +1007,99 @@ def seed_db_view(request):
     return redirect('settings')
 
 
+
 @login_required
 def qa_view(request):
     context = {
         'active_page': 'qa',
     }
     return render(request, 'api/qa.html', context)
+
+
+@login_required
+def plans_view(request):
+    current_tenant = None
+    if not request.user.is_superuser:
+        current_tenant = Tenant.objects.filter(email__iexact=request.user.email).first()
+
+    context = {
+        'active_page': 'plans',
+        'current_tenant': current_tenant,
+    }
+    return render(request, 'api/plans.html', context)
+
+
+@login_required
+def user_dashboard_view(request):
+    migrate_existing_data_if_needed()
+    tenant = None
+    if not request.user.is_superuser:
+        tenant = Tenant.objects.filter(email__iexact=request.user.email).first()
+    else:
+        tenant = Tenant.objects.first()
+
+    if request.method == 'POST' and tenant:
+        plan = request.POST.get('plan', '').strip()
+        waba_token = request.POST.get('waba_token', '').strip()
+        phone_number_id = request.POST.get('phone_number_id', '').strip()
+        template_name = request.POST.get('template_name', '').strip()
+        language_code = request.POST.get('language_code', '').strip()
+
+
+        # Only allow setting plan duration once during initial setup
+        if plan and (not tenant.license_key or tenant.license_key == 'PENDING_SETUP'):
+            tenant.plan = plan
+            now = timezone.now()
+            if plan == '1-month':
+                tenant.expires_at = add_months(now, 1)
+            elif plan == '3-month':
+                tenant.expires_at = add_months(now, 3)
+            elif plan == '6-month':
+                tenant.expires_at = add_months(now, 6)
+            elif plan == '12-month':
+                tenant.expires_at = add_months(now, 12)
+
+
+        tenant.waba_token = waba_token
+        tenant.phone_number_id = phone_number_id
+        tenant.template_name = template_name
+        tenant.language_code = language_code
+
+
+        # Generate unique license key when WABA info is submitted
+        if not tenant.license_key or tenant.license_key == 'PENDING_SETUP':
+            clean_name = re.sub(r'[^a-zA-Z0-9]', '', tenant.name)[:5].upper() or "SUB"
+            random_suffix = random.randint(1000, 9999)
+            tenant.license_key = f"LIC-{clean_name}-{random_suffix}"
+            tenant.status = 'active'
+
+        tenant.save()
+        add_system_log('info', f"Updated WABA credentials & generated License Key '{tenant.license_key}' for '{tenant.name}'")
+        sync_db_to_data_json()
+        return redirect('user_dashboard')
+
+    recent_history = []
+    sla_percentage = 100
+    if tenant and tenant.license_key and tenant.license_key != 'PENDING_SETUP':
+        tenant_logs = CallEventLog.objects.filter(license_key=tenant.license_key).order_by('-timestamp')
+        recent_history = list(tenant_logs[:10])
+        total_count = len(recent_history)
+        passed_count = sum(1 for item in recent_history if item.is_sla_pass)
+        sla_percentage = int((passed_count / total_count * 100)) if total_count > 0 else 100
+
+    selected_plan = request.GET.get('plan', '').strip()
+
+    context = {
+        'active_page': 'user_dashboard',
+        'tenant': tenant,
+        'recent_history': recent_history,
+        'sla_percentage': sla_percentage,
+        'selected_plan': selected_plan,
+    }
+    return render(request, 'api/user_dashboard.html', context)
+
+
+
 
 
 # --- WEBHOOK / API CALL HANDLER (EXTERNAL API) ---
@@ -1291,60 +1446,102 @@ def handle_meta_status_webhook(request):
 
 def login_view(request):
     if request.user.is_authenticated:
-        return redirect('overview')
+        if request.user.is_superuser:
+            return redirect('overview')
+        return redirect('user_dashboard')
         
     error_msg = None
     if request.method == 'POST':
         email_input = request.POST.get('email', '').strip()
         password = request.POST.get('password', '')
         
-        user_by_email = User.objects.filter(email__iexact=email_input).first()
+        user_by_email = User.objects.filter(Q(email__iexact=email_input) | Q(username__iexact=email_input)).first()
+
         if user_by_email:
             user = authenticate(request, username=user_by_email.username, password=password)
             if user is not None:
+                if not user.is_superuser:
+                    tenant_exists = Tenant.objects.filter(email__iexact=user.email).exists()
+                    if not tenant_exists:
+                        error_msg = "Your subscriber account has been removed by system administration."
+                        return render(request, 'api/login.html', {'error_msg': error_msg})
+                
                 login(request, user)
-                return redirect('overview')
+                if user.is_superuser:
+                    return redirect('overview')
+                return redirect('user_dashboard')
             else:
-                error_msg = "Invalid email address or password. Please verify your credentials and try again."
+                error_msg = "Incorrect password. Please verify your password and try again."
         else:
-            error_msg = "Invalid email address or password. Please verify your credentials and try again."
+            error_msg = "No registered account found with this email address. Please check your credentials or create an account."
+
             
     return render(request, 'api/login.html', {'error_msg': error_msg})
 
 
+
+
 def register_view(request):
     if request.user.is_authenticated:
-        return redirect('overview')
+        if request.user.is_superuser:
+            return redirect('overview')
+        return redirect('user_dashboard')
         
     error_msg = None
     if request.method == 'POST':
-        username = request.POST.get('username', '').strip()
+        business_name = request.POST.get('business_name', '').strip() or request.POST.get('username', '').strip()
         email = request.POST.get('email', '').strip()
         password = request.POST.get('password', '')
         password_confirm = request.POST.get('password_confirm', '')
-        
-        if password != password_confirm:
+
+        clean_username = re.sub(r'[^a-zA-Z0-9_]', '', business_name.lower().replace(' ', '_'))[:20] or "user"
+        if User.objects.filter(username=clean_username).exists():
+            clean_username = f"{clean_username}_{random.randint(100, 999)}"
+
+        if not business_name or not email or not password:
+            error_msg = "Please fill in all required registration fields."
+        elif password != password_confirm:
             error_msg = "Passwords do not match. Please verify both password entries."
-        elif User.objects.filter(username=username).exists():
-            error_msg = f"Username '{username}' is already taken. Please choose another username."
-        elif User.objects.filter(email=email).exists():
+        elif User.objects.filter(email__iexact=email).exists():
             error_msg = f"An account with email '{email}' already exists. Please sign in instead."
         else:
             try:
-                user = User.objects.create_user(username=username, email=email, password=password)
+                # 1. Create Django user account
+                user = User.objects.create_user(username=clean_username, email=email, password=password)
+                
+                Tenant.objects.create(
+                    name=business_name,
+                    email=email,
+                    plan='',
+                    license_key=f"PENDING_{uuid.uuid4().hex[:6].upper()}",
+                    expires_at=timezone.now(),
+                    waba_token='',
+                    phone_number_id='',
+                    template_name='',
+                    language_code='',
+                    status='pending'
+                )
+
+
+
+                # 3. Authenticate and log in user
                 login(request, user)
                 
                 add_system_log(
                     'info',
-                    f"Created user account: {username}",
+                    f"Self-registered new subscriber '{business_name}' ({email}). Awaiting WABA credential setup.",
                     'Phase 2: Core Server Engine',
-                    f"User '{username}' registered and authenticated via web registration form."
+                    f"User '{clean_username}' ({email}) registered. Pending WABA setup to generate license key."
                 )
-                return redirect('overview')
+                sync_db_to_data_json()
+                return redirect('user_dashboard')
             except Exception as e:
-                error_msg = f"Error creating user account: {str(e)}"
+                error_msg = f"Error creating subscriber account: {str(e)}"
                 
     return render(request, 'api/register.html', {'error_msg': error_msg})
+
+
+
 
 
 def logout_view(request):
@@ -1384,6 +1581,185 @@ def forgot_password_view(request):
                 error_msg = "Verification failed. The username and email address combination does not match any registered account."
                 
     return render(request, 'api/forgot_password.html', {'error_msg': error_msg, 'success_msg': success_msg})
+@csrf_exempt
+def create_razorpay_order_view(request):
+    if not request.user.is_authenticated:
+        return JsonResponse({'status': 'failed', 'message': 'Session expired. Please log in again.'}, status=200)
+
+    if request.method != 'POST':
+        return JsonResponse({'status': 'failed', 'message': 'Invalid request method.'}, status=200)
+
+    tenant = Tenant.objects.filter(email__iexact=request.user.email).first()
+    if not tenant and request.user.username:
+        tenant = Tenant.objects.filter(name__iexact=request.user.username).first()
+
+    if not tenant:
+        tenant = Tenant.objects.create(
+            name=request.user.username.title() if request.user.username else 'Subscriber',
+            email=request.user.email or f"{request.user.username}@example.com",
+            license_key=f"PENDING_{uuid.uuid4().hex[:6].upper()}",
+            status='pending',
+            expires_at=timezone.now()
+        )
+
+    plan_duration = request.POST.get('plan_duration')
+    if not plan_duration and request.body:
+        try:
+            import json
+            body_data = json.loads(request.body)
+            plan_duration = body_data.get('plan_duration')
+        except Exception:
+            pass
+    if not plan_duration:
+        plan_duration = '1-month'
+
+    prices_paise = {
+        '1-month': 99900,   # ₹999
+        '3-month': 249900,  # ₹2,499
+        '6-month': 499900,  # ₹4,999
+        '12-month': 899900, # ₹8,999
+    }
+    amount_paise = prices_paise.get(plan_duration, 99900)
+    amount_rupees = amount_paise / 100.0
+
+    key_id = (settings.RAZERPAY_KEY_ID or '').strip()
+    key_secret = (settings.RAZERPAY_KEY_SECRET or '').strip()
+
+    if not key_id or not key_secret:
+        return JsonResponse({'status': 'failed', 'message': 'Razorpay API keys are missing or invalid in backend .env file.'}, status=200)
+
+    client = razorpay.Client(auth=(key_id, key_secret))
+
+    try:
+        receipt_id = f"rcpt_{str(tenant.id).replace('-', '')[:10]}_{int(time.time())}"
+        order_data = {
+            'amount': int(amount_paise),
+            'currency': 'INR',
+            'receipt': receipt_id,
+            'payment_capture': 1,
+            'notes': {
+                'tenant_id': str(tenant.id),
+                'tenant_name': str(tenant.name),
+                'plan_duration': str(plan_duration)
+            }
+        }
+        order = client.order.create(data=order_data)
+
+        PaymentRecord.objects.create(
+            tenant=tenant,
+            razorpay_order_id=order['id'],
+            plan=plan_duration,
+            amount=amount_rupees,
+            status='created'
+        )
+
+        return JsonResponse({
+            'status': 'success',
+            'order_id': order['id'],
+            'amount': order['amount'],
+            'currency': order.get('currency', 'INR'),
+            'key_id': key_id,
+            'business_name': tenant.name,
+            'business_email': tenant.email or request.user.email or 'subscriber@example.com',
+            'business_phone': tenant.phone_number_id or '',
+        })
+
+    except Exception as e:
+        import traceback
+        print("--- RAZORPAY ORDER ERROR ---")
+        traceback.print_exc()
+        return JsonResponse({'status': 'failed', 'message': f"Razorpay API Error: {str(e)}"}, status=200)
+
+
+@csrf_exempt
+def verify_razorpay_payment_view(request):
+    if not request.user.is_authenticated:
+        return JsonResponse({'status': 'failed', 'message': 'Session expired. Please log in again.'}, status=200)
+
+    if request.method != 'POST':
+        return JsonResponse({'status': 'failed', 'message': 'Invalid request method.'}, status=200)
+
+    try:
+
+        import json
+        try:
+            data = json.loads(request.body) if request.body else request.POST
+        except Exception:
+            data = request.POST
+
+        order_id = data.get('razorpay_order_id')
+        payment_id = data.get('razorpay_payment_id')
+        signature = data.get('razorpay_signature')
+        phone_number_id = data.get('phone_number_id', '').strip()
+        waba_token = data.get('waba_token', '').strip()
+        template_name = data.get('template_name', '').strip() or 'missed_call_recovery'
+        language_code = data.get('language_code', '').strip() or 'en_US'
+
+        client = razorpay.Client(auth=(settings.RAZERPAY_KEY_ID, settings.RAZERPAY_KEY_SECRET))
+
+        params_dict = {
+            'razorpay_order_id': order_id,
+            'razorpay_payment_id': payment_id,
+            'razorpay_signature': signature
+        }
+
+        # Verify cryptographic signature
+        client.utility.verify_payment_signature(params_dict)
+
+        payment_rec = PaymentRecord.objects.filter(razorpay_order_id=order_id).first()
+        if not payment_rec:
+            return JsonResponse({'status': 'failed', 'message': 'Payment record not found.'}, status=404)
+
+        tenant = payment_rec.tenant
+        payment_rec.razorpay_payment_id = payment_id
+        payment_rec.razorpay_signature = signature
+        payment_rec.status = 'paid'
+        payment_rec.save()
+
+        # Update Tenant WABA Credentials and Expiry
+        if phone_number_id:
+            tenant.phone_number_id = phone_number_id
+        if waba_token:
+            tenant.waba_token = waba_token
+        tenant.template_name = template_name
+        tenant.language_code = language_code
+        tenant.plan = payment_rec.plan
+        tenant.status = 'active'
+
+        now = timezone.now()
+        days_map = {'1-month': 30, '3-month': 90, '6-month': 180, '12-month': 365}
+        added_days = days_map.get(payment_rec.plan, 30)
+        tenant.expires_at = now + timedelta(days=added_days)
+
+        # Generate License Key if pending
+        if tenant.is_pending:
+            random_code = uuid.uuid4().hex[:8].upper()
+            tenant.license_key = f"WABA_KEY-{random_code}"
+
+
+
+
+        tenant.save()
+        sync_db_to_data_json()
+
+        add_system_log(
+            'info',
+            f"Payment successful & Plan activated for tenant '{tenant.name}' ({tenant.plan})",
+            'Razorpay Gateway',
+            f"Payment ID: {payment_id}, Order ID: {order_id}, Amount: ₹{payment_rec.amount}"
+        )
+
+        return JsonResponse({
+            'status': 'success',
+            'license_key': tenant.license_key,
+            'plan': tenant.plan,
+            'expires_at': tenant.expires_at.strftime('%b %d, %Y')
+        })
+    except razorpay.errors.SignatureVerificationError:
+        return JsonResponse({'status': 'failed', 'message': 'Payment signature verification failed!'}, status=400)
+    except Exception as e:
+        return JsonResponse({'status': 'failed', 'message': str(e)}, status=500)
+
 
 
 

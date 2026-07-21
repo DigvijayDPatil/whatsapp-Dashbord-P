@@ -1,0 +1,586 @@
+{% extends 'api/base.html' %}
+
+{% block title %}Subscription Plans - SaaS Control Console{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ==========================================================================
+       Subscription Plans - Dedicated Light Mode Theme Overrides
+       ========================================================================== */
+    html.light-mode .header-banner-bg {
+        background-image: none !important;
+        background: linear-gradient(135deg, #eef2ff 0%, #ffffff 50%, #eef2ff 100%) !important;
+        border-color: #c7d2fe !important;
+        box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.08) !important;
+    }
+    html.light-mode .header-banner-title {
+        color: #0f172a !important;
+    }
+    html.light-mode .header-banner-desc {
+        color: #475569 !important;
+    }
+    html.light-mode .active-plan-widget {
+        background-image: none !important;
+        background-color: #ffffff !important;
+        border-color: #c7d2fe !important;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05) !important;
+    }
+    html.light-mode .active-plan-widget-title {
+        color: #4f46e5 !important;
+    }
+    html.light-mode .active-plan-widget-text {
+        color: #334155 !important;
+    }
+
+    /* Cards Light Mode Overrides - REMOVE DARK BACKGROUND IMAGES & GRADIENTS */
+    html.light-mode .plan-card {
+        background-image: none !important;
+        background-color: #ffffff !important;
+        background: #ffffff !important;
+        border-color: #e2e8f0 !important;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02) !important;
+    }
+    html.light-mode .plan-card:hover {
+        border-color: #cbd5e1 !important;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04) !important;
+    }
+
+    html.light-mode .plan-card-indigo {
+        background-image: none !important;
+        background-color: #ffffff !important;
+        background: #ffffff !important;
+        border-color: #c7d2fe !important;
+        box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.08) !important;
+    }
+    html.light-mode .plan-card-indigo:hover {
+        border-color: #818cf8 !important;
+        box-shadow: 0 20px 25px -5px rgba(99, 102, 241, 0.15) !important;
+    }
+
+    html.light-mode .plan-card-popular {
+        background-image: none !important;
+        background-color: #ffffff !important;
+        background: #ffffff !important;
+        border: 2px solid #6366f1 !important;
+        box-shadow: 0 20px 30px -10px rgba(99, 102, 241, 0.2) !important;
+    }
+    html.light-mode .plan-card-popular:hover {
+        box-shadow: 0 25px 35px -10px rgba(99, 102, 241, 0.3) !important;
+    }
+
+    html.light-mode .plan-card-emerald {
+        background-image: none !important;
+        background-color: #ffffff !important;
+        background: #ffffff !important;
+        border-color: #a7f3d0 !important;
+        box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.08) !important;
+    }
+    html.light-mode .plan-card-emerald:hover {
+        border-color: #34d399 !important;
+        box-shadow: 0 20px 25px -5px rgba(16, 185, 129, 0.15) !important;
+    }
+
+    /* Text elements in Light Mode */
+    html.light-mode .plan-card-title {
+        color: #0f172a !important;
+    }
+    html.light-mode .plan-card-desc {
+        color: #64748b !important;
+    }
+    html.light-mode .plan-card-price {
+        color: #0f172a !important;
+    }
+    html.light-mode .plan-card-price-indigo {
+        color: #4f46e5 !important;
+    }
+    html.light-mode .plan-card-price-emerald {
+        color: #059669 !important;
+    }
+    html.light-mode .plan-card-subtext {
+        color: #64748b !important;
+    }
+    html.light-mode .plan-card-tag {
+        color: #64748b !important;
+    }
+    html.light-mode .plan-card-tag-indigo {
+        color: #4f46e5 !important;
+    }
+    html.light-mode .plan-card-tag-emerald {
+        color: #059669 !important;
+    }
+
+    /* Icon Containers */
+    html.light-mode .plan-icon-slate {
+        background-image: none !important;
+        background-color: #f1f5f9 !important;
+        border-color: #cbd5e1 !important;
+        color: #334155 !important;
+    }
+    html.light-mode .plan-icon-indigo {
+        background-image: none !important;
+        background-color: #e0e7ff !important;
+        border-color: #c7d2fe !important;
+        color: #4f46e5 !important;
+    }
+    html.light-mode .plan-icon-emerald {
+        background-image: none !important;
+        background-color: #d1fae5 !important;
+        border-color: #a7f3d0 !important;
+        color: #059669 !important;
+    }
+
+    /* Buttons in Light Mode */
+    html.light-mode .btn-plan-slate {
+        background-image: none !important;
+        background-color: #0f172a !important;
+        color: #ffffff !important;
+        border-color: #0f172a !important;
+    }
+    html.light-mode .btn-plan-slate:hover {
+        background-color: #1e293b !important;
+        border-color: #1e293b !important;
+    }
+
+    html.light-mode .btn-plan-indigo {
+        background-image: none !important;
+        background-color: #4f46e5 !important;
+        color: #ffffff !important;
+        border-color: #4f46e5 !important;
+    }
+    html.light-mode .btn-plan-indigo:hover {
+        background-color: #4338ca !important;
+        border-color: #4338ca !important;
+    }
+
+    html.light-mode .btn-plan-popular {
+        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%) !important;
+        color: #ffffff !important;
+        border: none !important;
+        box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.3) !important;
+    }
+    html.light-mode .btn-plan-popular:hover {
+        background: linear-gradient(135deg, #4338ca 0%, #6d28d9 100%) !important;
+        box-shadow: 0 15px 20px -3px rgba(79, 70, 229, 0.4) !important;
+    }
+
+    html.light-mode .btn-plan-emerald {
+        background-image: none !important;
+        background-color: #059669 !important;
+        color: #ffffff !important;
+        border-color: #059669 !important;
+    }
+    html.light-mode .btn-plan-emerald:hover {
+        background-color: #047857 !important;
+        border-color: #047857 !important;
+    }
+
+    html.light-mode .btn-plan-active {
+        background-image: none !important;
+        background-color: #ecfdf5 !important;
+        color: #047857 !important;
+        border-color: #a7f3d0 !important;
+    }
+
+    /* List items & Divider in Light Mode */
+    html.light-mode .plan-feature-text {
+        color: #334155 !important;
+    }
+    html.light-mode .plan-feature-muted {
+        color: #94a3b8 !important;
+    }
+    html.light-mode .plan-border-divider {
+        border-color: #e2e8f0 !important;
+    }
+
+    /* Feature Matrix Table in Light Mode */
+    html.light-mode .matrix-container {
+        background-image: none !important;
+        background-color: #ffffff !important;
+        border-color: #e2e8f0 !important;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05) !important;
+    }
+    html.light-mode .matrix-title {
+        color: #0f172a !important;
+    }
+    html.light-mode .matrix-subtitle {
+        color: #64748b !important;
+    }
+    html.light-mode .matrix-header-row {
+        border-color: #e2e8f0 !important;
+        color: #475569 !important;
+    }
+    html.light-mode .matrix-row {
+        border-color: #f1f5f9 !important;
+    }
+    html.light-mode .matrix-feature-name {
+        color: #1e293b !important;
+    }
+    html.light-mode .matrix-cell-text {
+        color: #334155 !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-8 animate-fade-in">
+    
+    <!-- Page Header & Active Plan Status Banner -->
+    <div class="header-banner-bg bg-gradient-to-r from-slate-950 via-indigo-955/40 to-slate-950 border border-indigo-500/30 rounded-2xl p-6 sm:p-8 relative overflow-hidden shadow-xl">
+        <div class="absolute -right-12 -top-12 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div class="space-y-2 max-w-xl">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-semibold uppercase tracking-wider font-mono">
+                    <i data-lucide="zap" class="w-3.5 h-3.5"></i>
+                    <span>SaaS License & Tier Management</span>
+                </div>
+                <h1 class="header-banner-title text-2xl sm:text-3xl font-black text-slate-100 tracking-tight">Subscription Plans & Tier Upgrade</h1>
+                <p class="header-banner-desc text-slate-400 text-xs sm:text-sm leading-relaxed">
+                    Select a plan optimized for your operational scale. All plans include automated WhatsApp missed call recovery webhooks, SLA monitoring, and real-time execution logs.
+                </p>
+            </div>
+
+            {% if current_tenant %}
+            <!-- Logged-in Tenant Active Plan Widget -->
+            <div class="active-plan-widget bg-slate-900/80 border border-indigo-500/40 rounded-2xl p-5 shrink-0 min-w-[260px] shadow-lg backdrop-blur-sm space-y-3">
+                <div class="flex items-center justify-between text-xs text-slate-400">
+                    <span class="font-mono uppercase text-[10px] tracking-wider text-slate-400">Your Current Plan</span>
+                    <span class="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase font-mono {% if current_tenant.is_pending or current_tenant.status == 'pending' %}bg-amber-955/80 text-amber-400 border border-amber-800/50{% elif current_tenant.status == 'active' %}bg-emerald-955/80 text-emerald-400 border border-emerald-800/50{% else %}bg-rose-955/80 text-rose-400 border border-rose-800/50{% endif %}">
+                        {% if current_tenant.is_pending or current_tenant.status == 'pending' %}PENDING{% else %}{{ current_tenant.status }}{% endif %}
+                    </span>
+                </div>
+                <div>
+                    <div class="active-plan-widget-title text-xl font-black text-indigo-400 font-mono tracking-tight">{% if current_tenant.is_pending or not current_tenant.plan %}Pending Setup{% else %}{{ current_tenant.plan|title }} Plan{% endif %}</div>
+                    <div class="text-[11px] text-slate-400 mt-0.5 font-mono">License: <span class="active-plan-widget-text text-slate-200">{% if current_tenant.is_pending %}PENDING_KEY{% else %}{{ current_tenant.license_key }}{% endif %}</span></div>
+                </div>
+                <div class="plan-border-divider pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px]">
+                    <span class="text-slate-400">Expires:</span>
+                    <span class="active-plan-widget-text font-mono text-slate-200 font-semibold">{% if current_tenant.is_pending or not current_tenant.plan %}Awaiting Activation{% else %}{{ current_tenant.expires_at|date:"M d, Y" }}{% endif %}</span>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Pricing Cards Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+        
+        <!-- 1-Month Plan -->
+        <div class="plan-card relative bg-gradient-to-b from-slate-950 via-slate-955 to-slate-950 border border-slate-850 rounded-2xl p-6 flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 group">
+            {% if current_tenant and current_tenant.plan == '1-month' and not current_tenant.is_pending %}
+            <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 text-[10px] font-black uppercase tracking-wider px-3 py-0.5 rounded-full shadow-lg">
+                Active Plan
+            </div>
+            {% endif %}
+            <div class="space-y-4">
+                <div class="flex items-center justify-between">
+                    <div class="plan-icon-slate w-10 h-10 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-300">
+                        <i data-lucide="clock" class="w-5 h-5"></i>
+                    </div>
+                    <span class="plan-card-tag text-[10px] font-bold uppercase tracking-wider text-slate-500 font-mono">Standard</span>
+                </div>
+                <div>
+                    <h3 class="plan-card-title text-lg font-bold text-slate-100 font-mono">1 Month</h3>
+                    <p class="plan-card-desc text-xs text-slate-400 mt-1">Starter monthly subscription for small setups</p>
+                </div>
+                <div class="pt-2">
+                    <div class="flex items-baseline gap-1">
+                        <span class="plan-card-price text-3xl font-black text-slate-100 font-mono tracking-tight">₹999</span>
+                        <span class="plan-card-subtext text-xs text-slate-400 font-mono">/ month</span>
+                    </div>
+                    <span class="plan-card-subtext text-[10px] text-slate-500 font-mono block mt-1">Billed monthly</span>
+                </div>
+
+                <ul class="plan-border-divider space-y-2.5 pt-4 border-t border-slate-900 text-xs text-slate-300">
+                    <li class="flex items-center gap-2">
+                        <i data-lucide="check-circle-2" class="w-4 h-4 text-indigo-400 shrink-0"></i>
+                        <span class="plan-feature-text">1 License Key</span>
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <i data-lucide="check-circle-2" class="w-4 h-4 text-indigo-400 shrink-0"></i>
+                        <span class="plan-feature-text">Automated Webhook Call Trigger</span>
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <i data-lucide="check-circle-2" class="w-4 h-4 text-indigo-400 shrink-0"></i>
+                        <span class="plan-feature-text">Standard Meta Cloud Webhook</span>
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <i data-lucide="minus-circle" class="w-4 h-4 text-slate-600 shrink-0"></i>
+                        <span class="plan-feature-muted">Priority Delivery Queue</span>
+                    </li>
+                </ul>
+            </div>
+            <div class="pt-6">
+                {% if current_tenant and current_tenant.plan == '1-month' and not current_tenant.is_pending %}
+                <button disabled class="btn-plan-active w-full py-2.5 px-4 rounded-xl text-xs font-bold border border-emerald-500/30 text-emerald-400 cursor-default flex items-center justify-center gap-2">
+                    <i data-lucide="check" class="w-4 h-4"></i> Current Subscription
+                </button>
+                {% else %}
+                <a href="{% url 'user_dashboard' %}?plan=1-month" class="btn-plan-slate w-full py-2.5 px-4 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-850 border border-slate-800 text-slate-200 flex items-center justify-center gap-2 transition-all">
+                    <span>Select 1-Month Tier</span>
+                    <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 3-Month Plan -->
+        <div class="plan-card-indigo relative bg-gradient-to-b from-slate-950 via-indigo-955/20 to-slate-950 border border-indigo-500/30 rounded-2xl p-6 flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 group">
+            <div class="absolute -top-3 right-4 bg-indigo-600 text-white text-[9px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full shadow-md font-mono">
+                Save 16%
+            </div>
+            {% if current_tenant and current_tenant.plan == '3-month' and not current_tenant.is_pending %}
+            <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 text-[10px] font-black uppercase tracking-wider px-3 py-0.5 rounded-full shadow-lg">
+                Active Plan
+            </div>
+            {% endif %}
+            <div class="space-y-4">
+                <div class="flex items-center justify-between">
+                    <div class="plan-icon-indigo w-10 h-10 rounded-xl bg-indigo-955/60 border border-indigo-800/40 flex items-center justify-center text-indigo-400">
+                        <i data-lucide="calendar" class="w-5 h-5"></i>
+                    </div>
+                    <span class="plan-card-tag-indigo text-[10px] font-bold uppercase tracking-wider text-indigo-400 font-mono">Quarterly</span>
+                </div>
+                <div>
+                    <h3 class="plan-card-title text-lg font-bold text-slate-100 font-mono">3 Months</h3>
+                    <p class="plan-card-desc text-xs text-slate-400 mt-1">Quarterly access with initial discount</p>
+                </div>
+                <div class="pt-2">
+                    <div class="flex items-baseline gap-1">
+                        <span class="plan-card-price-indigo text-3xl font-black text-indigo-400 font-mono tracking-tight">₹2,499</span>
+                        <span class="plan-card-subtext text-xs text-slate-400 font-mono">/ quarter</span>
+                    </div>
+                    <span class="plan-card-subtext text-[10px] text-slate-400 font-mono block mt-1">Equivalent to ₹833/mo</span>
+                </div>
+
+                <ul class="plan-border-divider space-y-2.5 pt-4 border-t border-slate-900 text-xs text-slate-300">
+                    <li class="flex items-center gap-2">
+                        <i data-lucide="check-circle-2" class="w-4 h-4 text-indigo-400 shrink-0"></i>
+                        <span class="plan-feature-text">1 License Key</span>
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <i data-lucide="check-circle-2" class="w-4 h-4 text-indigo-400 shrink-0"></i>
+                        <span class="plan-feature-text">Priority Webhook Execution Queue</span>
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <i data-lucide="check-circle-2" class="w-4 h-4 text-indigo-400 shrink-0"></i>
+                        <span class="plan-feature-text">Real-time Terminal Log Audit</span>
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <i data-lucide="check-circle-2" class="w-4 h-4 text-indigo-400 shrink-0"></i>
+                        <span class="plan-feature-text">Standard Support Response</span>
+                    </li>
+                </ul>
+            </div>
+            <div class="pt-6">
+                {% if current_tenant and current_tenant.plan == '3-month' and not current_tenant.is_pending %}
+                <button disabled class="btn-plan-active w-full py-2.5 px-4 rounded-xl text-xs font-bold border border-emerald-500/30 text-emerald-400 cursor-default flex items-center justify-center gap-2">
+                    <i data-lucide="check" class="w-4 h-4"></i> Current Subscription
+                </button>
+                {% else %}
+                <a href="{% url 'user_dashboard' %}?plan=3-month" class="btn-plan-indigo w-full py-2.5 px-4 rounded-xl text-xs font-bold bg-indigo-600/20 border border-indigo-500/40 text-indigo-300 flex items-center justify-center gap-2 transition-all">
+                    <span>Select 3-Month Tier</span>
+                    <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 6-Month Plan (Recommended) -->
+        <div class="plan-card-popular relative bg-gradient-to-b from-indigo-955/70 via-slate-950 to-slate-955 border-2 border-indigo-500 rounded-2xl p-6 flex flex-col justify-between transition-all duration-300 shadow-xl shadow-indigo-955/40 hover:-translate-y-1 group">
+            <div class="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-indigo-500 to-violet-500 text-white text-[10px] font-black uppercase tracking-widest px-3.5 py-1 rounded-full shadow-lg font-mono">
+                Most Popular • Save 16%
+            </div>
+            {% if current_tenant and current_tenant.plan == '6-month' and not current_tenant.is_pending %}
+            <div class="absolute -top-3 right-4 bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 text-[10px] font-black uppercase tracking-wider px-3 py-0.5 rounded-full shadow-lg">
+                Active Plan
+            </div>
+            {% endif %}
+            <div class="space-y-4 pt-2">
+                <div class="flex items-center justify-between">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30">
+                        <i data-lucide="award" class="w-5 h-5"></i>
+                    </div>
+                    <span class="plan-card-tag-indigo text-[10px] font-bold uppercase tracking-wider text-indigo-300 font-mono">Semi-Annual</span>
+                </div>
+                <div>
+                    <h3 class="plan-card-title text-lg font-bold text-slate-100 font-mono">6 Months</h3>
+                    <p class="plan-card-desc text-xs text-slate-400 mt-1">High-volume business tier with SLA guarantee</p>
+                </div>
+                <div class="pt-2">
+                    <div class="flex items-baseline gap-1">
+                        <span class="plan-card-price-indigo text-3xl font-black text-white font-mono tracking-tight">₹4,999</span>
+                        <span class="plan-card-subtext text-xs text-slate-400 font-mono">/ 6 months</span>
+                    </div>
+                    <span class="plan-card-tag-indigo text-[10px] text-indigo-400 font-mono block mt-1">Equivalent to ₹833/mo</span>
+                </div>
+
+                <ul class="plan-border-divider space-y-2.5 pt-4 border-t border-slate-850 text-xs text-slate-200">
+                    <li class="flex items-center gap-2">
+                        <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400 shrink-0"></i>
+                        <span class="plan-feature-text">1 License Key + Priority SLA Pass</span>
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400 shrink-0"></i>
+                        <span class="plan-feature-text">Sub-3000ms SLA Guaranteed Delivery</span>
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400 shrink-0"></i>
+                        <span class="plan-feature-text">Full Log Inspector Breakdown Access</span>
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400 shrink-0"></i>
+                        <span class="plan-feature-text">Priority Support Tickets</span>
+                    </li>
+                </ul>
+            </div>
+            <div class="pt-6">
+                {% if current_tenant and current_tenant.plan == '6-month' and not current_tenant.is_pending %}
+                <button disabled class="btn-plan-active w-full py-2.5 px-4 rounded-xl text-xs font-bold border border-emerald-500/30 text-emerald-400 cursor-default flex items-center justify-center gap-2">
+                    <i data-lucide="check" class="w-4 h-4"></i> Current Subscription
+                </button>
+                {% else %}
+                <a href="{% url 'user_dashboard' %}?plan=6-month" class="btn-plan-popular w-full py-2.5 px-4 rounded-xl text-xs font-bold bg-gradient-to-r from-indigo-600 to-violet-600 text-white flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/30 transition-all hover:scale-[1.02]">
+                    <span>Upgrade to 6-Month Plan</span>
+                    <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 12-Month Plan -->
+        <div class="plan-card-emerald relative bg-gradient-to-b from-slate-950 via-emerald-955/20 to-slate-950 border border-emerald-500/30 rounded-2xl p-6 flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 group">
+            <div class="absolute -top-3 right-4 bg-emerald-600 text-slate-950 text-[9px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full shadow-md font-mono">
+                Save 25%
+            </div>
+            {% if current_tenant and current_tenant.plan == '12-month' and not current_tenant.is_pending %}
+            <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 text-[10px] font-black uppercase tracking-wider px-3 py-0.5 rounded-full shadow-lg">
+                Active Plan
+            </div>
+            {% endif %}
+            <div class="space-y-4">
+                <div class="flex items-center justify-between">
+                    <div class="plan-icon-emerald w-10 h-10 rounded-xl bg-emerald-955/60 border border-emerald-800/40 flex items-center justify-center text-emerald-400">
+                        <i data-lucide="crown" class="w-5 h-5"></i>
+                    </div>
+                    <span class="plan-card-tag-emerald text-[10px] font-bold uppercase tracking-wider text-emerald-400 font-mono">Annual</span>
+                </div>
+                <div>
+                    <h3 class="plan-card-title text-lg font-bold text-slate-100 font-mono">12 Months</h3>
+                    <p class="plan-card-desc text-xs text-slate-400 mt-1">Enterprise scale with maximum savings</p>
+                </div>
+                <div class="pt-2">
+                    <div class="flex items-baseline gap-1">
+                        <span class="plan-card-price-emerald text-3xl font-black text-emerald-400 font-mono tracking-tight">₹8,999</span>
+                        <span class="plan-card-subtext text-xs text-slate-400 font-mono">/ year</span>
+                    </div>
+                    <span class="plan-card-tag-emerald text-[10px] text-emerald-400/80 font-mono block mt-1">Best value (₹750/mo)</span>
+                </div>
+
+                <ul class="plan-border-divider space-y-2.5 pt-4 border-t border-slate-900 text-xs text-slate-300">
+                    <li class="flex items-center gap-2">
+                        <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400 shrink-0"></i>
+                        <span class="plan-feature-text">1 License Key + Full Enterprise Support</span>
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400 shrink-0"></i>
+                        <span class="plan-feature-text">Dedicated Webhook Ingress Worker</span>
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400 shrink-0"></i>
+                        <span class="plan-feature-text">Custom Template & Multi-Language Support</span>
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400 shrink-0"></i>
+                        <span class="plan-feature-text">24/7 Priority Support & Onboarding</span>
+                    </li>
+                </ul>
+            </div>
+            <div class="pt-6">
+                {% if current_tenant and current_tenant.plan == '12-month' and not current_tenant.is_pending %}
+                <button disabled class="btn-plan-active w-full py-2.5 px-4 rounded-xl text-xs font-bold border border-emerald-500/30 text-emerald-400 cursor-default flex items-center justify-center gap-2">
+                    <i data-lucide="check" class="w-4 h-4"></i> Current Subscription
+                </button>
+                {% else %}
+                <a href="{% url 'user_dashboard' %}?plan=12-month" class="btn-plan-emerald w-full py-2.5 px-4 rounded-xl text-xs font-bold bg-emerald-600/20 border border-emerald-500/40 text-emerald-300 flex items-center justify-center gap-2 transition-all">
+                    <span>Select 12-Month Tier</span>
+                    <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Plan Feature Comparison Matrix -->
+    <div class="matrix-container bg-slate-950 border border-slate-900 rounded-2xl p-6 space-y-6 shadow-lg">
+        <div class="flex items-center justify-between border-b border-slate-900 plan-border-divider pb-4">
+            <div>
+                <h3 class="matrix-title text-sm font-bold text-slate-100 uppercase tracking-wider font-mono flex items-center gap-2">
+                    <i data-lucide="layers" class="w-4 h-4 text-indigo-400"></i>
+                    Feature Breakdown Matrix
+                </h3>
+                <p class="matrix-subtitle text-xs text-slate-400 mt-0.5">Detailed comparison across all available subscription plans</p>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto custom-scrollbar">
+            <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                    <tr class="matrix-header-row border-b border-slate-900 text-slate-400 font-mono uppercase text-[10px]">
+                        <th class="py-3 px-4">Feature / Capability</th>
+                        <th class="py-3 px-4 text-center">1 Month</th>
+                        <th class="py-3 px-4 text-center">3 Months</th>
+                        <th class="py-3 px-4 text-center text-indigo-400">6 Months</th>
+                        <th class="py-3 px-4 text-center text-emerald-400">12 Months</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-900/60 text-slate-300">
+                    <tr class="matrix-row">
+                        <td class="matrix-feature-name py-3.5 px-4 font-semibold text-slate-200">Missed Call Recovery Webhooks</td>
+                        <td class="matrix-cell-text py-3.5 px-4 text-center">Unlimited</td>
+                        <td class="matrix-cell-text py-3.5 px-4 text-center">Unlimited</td>
+                        <td class="matrix-cell-text py-3.5 px-4 text-center font-bold text-indigo-400">Unlimited</td>
+                        <td class="matrix-cell-text py-3.5 px-4 text-center font-bold text-emerald-400">Unlimited</td>
+                    </tr>
+                    <tr class="matrix-row">
+                        <td class="matrix-feature-name py-3.5 px-4 font-semibold text-slate-200">Meta Cloud WhatsApp Delivery</td>
+                        <td class="matrix-cell-text py-3.5 px-4 text-center"><i data-lucide="check" class="w-4 h-4 text-emerald-400 mx-auto"></i></td>
+                        <td class="matrix-cell-text py-3.5 px-4 text-center"><i data-lucide="check" class="w-4 h-4 text-emerald-400 mx-auto"></i></td>
+                        <td class="matrix-cell-text py-3.5 px-4 text-center"><i data-lucide="check" class="w-4 h-4 text-emerald-400 mx-auto"></i></td>
+                        <td class="matrix-cell-text py-3.5 px-4 text-center"><i data-lucide="check" class="w-4 h-4 text-emerald-400 mx-auto"></i></td>
+                    </tr>
+                    <tr class="matrix-row">
+                        <td class="matrix-feature-name py-3.5 px-4 font-semibold text-slate-200">Sub-3000ms SLA Latency Audit</td>
+                        <td class="matrix-cell-text py-3.5 px-4 text-center"><i data-lucide="check" class="w-4 h-4 text-slate-500 mx-auto"></i></td>
+                        <td class="matrix-cell-text py-3.5 px-4 text-center"><i data-lucide="check" class="w-4 h-4 text-indigo-400 mx-auto"></i></td>
+                        <td class="matrix-cell-text py-3.5 px-4 text-center"><i data-lucide="check" class="w-4 h-4 text-indigo-400 mx-auto"></i></td>
+                        <td class="matrix-cell-text py-3.5 px-4 text-center"><i data-lucide="check" class="w-4 h-4 text-emerald-400 mx-auto"></i></td>
+                    </tr>
+                    <tr class="matrix-row">
+                        <td class="matrix-feature-name py-3.5 px-4 font-semibold text-slate-200">Live Terminal Inspector Modal</td>
+                        <td class="matrix-cell-text py-3.5 px-4 text-center"><i data-lucide="check" class="w-4 h-4 text-slate-500 mx-auto"></i></td>
+                        <td class="matrix-cell-text py-3.5 px-4 text-center"><i data-lucide="check" class="w-4 h-4 text-indigo-400 mx-auto"></i></td>
+                        <td class="matrix-cell-text py-3.5 px-4 text-center"><i data-lucide="check" class="w-4 h-4 text-indigo-400 mx-auto"></i></td>
+                        <td class="matrix-cell-text py-3.5 px-4 text-center"><i data-lucide="check" class="w-4 h-4 text-emerald-400 mx-auto"></i></td>
+                    </tr>
+                    <tr class="matrix-row">
+                        <td class="matrix-feature-name py-3.5 px-4 font-semibold text-slate-200">Custom WABA Templates & Languages</td>
+                        <td class="matrix-cell-text py-3.5 px-4 text-center"><i data-lucide="minus" class="w-4 h-4 text-slate-600 mx-auto"></i></td>
+                        <td class="matrix-cell-text py-3.5 px-4 text-center"><i data-lucide="minus" class="w-4 h-4 text-slate-600 mx-auto"></i></td>
+                        <td class="matrix-cell-text py-3.5 px-4 text-center"><i data-lucide="check" class="w-4 h-4 text-indigo-400 mx-auto"></i></td>
+                        <td class="matrix-cell-text py-3.5 px-4 text-center"><i data-lucide="check" class="w-4 h-4 text-emerald-400 mx-auto"></i></td>
+                    </tr>
+                    <tr class="matrix-row">
+                        <td class="matrix-feature-name py-3.5 px-4 font-semibold text-slate-200">Support Priority Level</td>
+                        <td class="matrix-cell-text py-3.5 px-4 text-center text-slate-400">Community</td>
+                        <td class="matrix-cell-text py-3.5 px-4 text-center text-slate-300">Standard</td>
+                        <td class="matrix-cell-text py-3.5 px-4 text-center font-semibold text-indigo-400">Priority (24h)</td>
+                        <td class="matrix-cell-text py-3.5 px-4 text-center font-bold text-emerald-400">24/7 Dedicated</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

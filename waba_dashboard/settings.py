@@ -10,10 +10,15 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import os
 from pathlib import Path
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Load environment variables from .env file
+load_dotenv(BASE_DIR / '.env')
 
 
 # Quick-start development settings - unsuitable for production
@@ -21,6 +26,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-k!4jhtw@gykym8@32$5+u87zttp)f4hg=ql*1h$j#h&pe%88+='
+
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -126,4 +132,16 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Authentication Settings
 LOGIN_URL = 'login'
+
+# Security & Cross-Origin settings for payment popups (e.g. Razorpay Netbanking)
+SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin-allow-popups'
+
+# Razorpay Payment Gateway Settings
+RAZERPAY_KEY_ID = os.environ.get('RAZERPAY_KEY_ID', '')
+RAZERPAY_KEY_SECRET = os.environ.get('RAZERPAY_KEY_SECRET', '')
+
+
+
+
+
 

@@ -103,7 +103,7 @@
                 <h1 class="text-xl font-black tracking-tight flex items-center justify-center gap-1">
                     WABA <span class="bg-gradient-to-r from-indigo-400 to-violet-400 bg-clip-text text-transparent">Recover</span>
                 </h1>
-                <p class="text-xs text-slate-400 mt-1.5 font-medium">Create Super Admin System Account</p>
+                <p class="text-xs text-slate-400 mt-1.5 font-medium">Create Your Subscriber Account</p>
             </div>
         </div>
 
@@ -118,13 +118,13 @@
         <form method="POST" class="space-y-4" autocomplete="off">
             {% csrf_token %}
             
-            <!-- Username Input -->
+            <!-- Business Name Input -->
             <div class="space-y-1.5">
-                <label for="username" class="text-[10px] font-bold text-slate-450 tracking-wider uppercase flex items-center gap-1.5">
-                    <i data-lucide="user" class="w-3.5 h-3.5 text-indigo-400"></i>
-                    Username
+                <label for="business_name" class="text-[10px] font-bold text-slate-450 tracking-wider uppercase flex items-center gap-1.5">
+                    <i data-lucide="building" class="w-3.5 h-3.5 text-indigo-400"></i>
+                    Business / Company Name
                 </label>
-                <input type="text" id="username" name="username" placeholder="e.g. admin" required autocomplete="off"
+                <input type="text" id="business_name" name="business_name" placeholder="e.g. Apex Car Rentals" required autocomplete="off"
                     class="w-full text-xs px-4 py-3 bg-slate-900/60 border border-slate-800 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-semibold">
             </div>
 
@@ -134,9 +134,14 @@
                     <i data-lucide="mail" class="w-3.5 h-3.5 text-indigo-400"></i>
                     Email Address
                 </label>
-                <input type="email" id="email" name="email" placeholder="e.g. admin@waba.com" required autocomplete="off"
+                <input type="email" id="email" name="email" placeholder="name@company.com" required autocomplete="off"
                     class="w-full text-xs px-4 py-3 bg-slate-900/60 border border-slate-800 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-semibold">
             </div>
+
+
+
+
+
 
             <!-- Password Input -->
             <div class="space-y-1.5">
@@ -161,9 +166,10 @@
             <!-- Action Button -->
             <button type="submit" class="w-full py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-md hover:-translate-y-0.5 transition-all text-xs mt-2">
                 <i data-lucide="user-plus" class="w-4 h-4"></i>
-                Create Admin Account
+                Create Account & Get License Key
             </button>
         </form>
+
 
         <!-- Toggle Login Link -->
         <div class="text-center pt-2">

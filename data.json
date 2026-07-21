@@ -1,6 +1,38 @@
 {
   "tenants": [
     {
+      "id": "0da4a18f-f757-4e09-8728-4862ac15ea57",
+      "name": "xyz",
+      "email": "xyz123@gmail.com",
+      "licenseKey": "WABA_KEY-6D2C2BC9",
+      "plan": "3-month",
+      "createdAt": "2026-07-21T09:30:57.064509+00:00",
+      "expiresAt": "2026-10-19T10:27:50.256785+00:00",
+      "status": "active",
+      "wabaToken": "FDVDSCASDAFSVDCS",
+      "phoneNumberId": "9898989898",
+      "templateName": "Y_TEMP",
+      "languageCode": "en_US",
+      "callsCount": 0,
+      "messagesSent": 0
+    },
+    {
+      "id": "03203ca7-e477-4be0-847a-4c62184c2d23",
+      "name": "abc",
+      "email": "abc0018@gmail.com",
+      "licenseKey": "WABA_KEY-6F5A0C2B",
+      "plan": "12-month",
+      "createdAt": "2026-07-21T08:35:45.633883+00:00",
+      "expiresAt": "2027-07-21T09:28:23.328656+00:00",
+      "status": "active",
+      "wabaToken": "lkjhfFghj",
+      "phoneNumberId": "576890876789000",
+      "templateName": "diamond_temp",
+      "languageCode": "en_US",
+      "callsCount": 0,
+      "messagesSent": 0
+    },
+    {
       "id": "3616515d-23bd-4063-83bd-e79ae23d03d3",
       "name": "Apex",
       "email": "Apex34@gmail.com",
@@ -29,13 +61,13 @@
       "phoneNumberId": "209332145300122",
       "templateName": "missed_call_recovery",
       "languageCode": "en_US",
-      "callsCount": 43,
-      "messagesSent": 38
+      "callsCount": 39,
+      "messagesSent": 5
     },
     {
       "id": "16278b21-89bb-4e9b-bd82-d0886cd2339c",
       "name": "Walstar MEDIA LLP",
-      "email": "xonexe8115@lovadio.com",
+      "email": "digupatil0018@gmail.com",
       "licenseKey": "LIC-WALST-1725",
       "plan": "5-month",
       "createdAt": "2026-07-16T11:59:45.779039+00:00",
