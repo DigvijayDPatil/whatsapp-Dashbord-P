@@ -241,10 +241,6 @@
                             <span id="pay-btn-text">{% if tenant.is_pending %}Proceed to Pay & Activate{% else %}Pay & Upgrade Plan{% endif %}</span>
                         </button>
                     </div>
-                    </div>
-
-
-
 
                 </form>
             </div>
@@ -598,13 +594,6 @@ function executeRazorpayPayment() {
                                     <span data-tooltip="{{ log.details|escapejs }}" class="inline-flex items-center gap-1 px-2 py-0.5 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded text-[10.5px] font-medium cursor-pointer truncate max-w-full">Failed</span>
                                 {% endif %}
                             </td>
-                        </tr>
-
-
-
-
-
-
                         </tr>
                         {% empty %}
                         <tr>

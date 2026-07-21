@@ -11,9 +11,9 @@
       "status": "active",
       "wabaToken": "FDVDSCASDAFSVDCS",
       "phoneNumberId": "9898989898",
-      "templateName": "Y_TEMP",
+      "templateName": "xyz_temp",
       "languageCode": "en_US",
-      "callsCount": 0,
+      "callsCount": 1,
       "messagesSent": 0
     },
     {
@@ -82,6 +82,54 @@
     }
   ],
   "callHistory": [
+    {
+      "id": "37f76068-ec5b-48e6-aefd-0fc265959459",
+      "timestamp": "2026-07-21T11:10:51.231360+00:00",
+      "licenseKey": "WABA_KEY-6D2C2BC9",
+      "tenantName": "xyz",
+      "callerPhone": "+1 (415) 555-2345",
+      "callerName": "David Miller",
+      "status": "simulated",
+      "durationMs": 178,
+      "details": "SIMULATED: WhatsApp auto-recovery message simulated (local test token in use). No actual message sent.",
+      "rawError": null
+    },
+    {
+      "id": "tx_98s21a_080vj",
+      "timestamp": "2026-07-21T11:07:12.080168+00:00",
+      "licenseKey": "WABA_KEY-6D2C2BC9",
+      "tenantName": "xyz",
+      "callerPhone": "+14155552671",
+      "callerName": "Sarah Jenkins",
+      "status": "simulated",
+      "durationMs": 242,
+      "details": "SIMULATED: Mock seed history entry for xyz.",
+      "rawError": null
+    },
+    {
+      "id": "tx_12f90b_080vj",
+      "timestamp": "2026-07-21T10:56:12.080168+00:00",
+      "licenseKey": "WABA_KEY-6D2C2BC9",
+      "tenantName": "xyz",
+      "callerPhone": "+13125559082",
+      "callerName": "Marcus Vance",
+      "status": "simulated",
+      "durationMs": 195,
+      "details": "SIMULATED: Mock seed history entry for xyz.",
+      "rawError": null
+    },
+    {
+      "id": "tx_44f12z_080vj",
+      "timestamp": "2026-07-21T10:39:12.080168+00:00",
+      "licenseKey": "WABA_KEY-6D2C2BC9",
+      "tenantName": "xyz",
+      "callerPhone": "+16505557711",
+      "callerName": "Elizabeth Holmes",
+      "status": "simulated",
+      "durationMs": 180,
+      "details": "SIMULATED: Mock seed history entry for xyz.",
+      "rawError": null
+    },
     {
       "id": "dc53b2c5-82d5-49b5-9cfa-53af4d6b7fd0",
       "timestamp": "2026-07-18T05:31:13.720829+00:00",
