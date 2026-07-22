@@ -1,16 +1,38 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <script>
+        // Apply theme early to prevent flash
+        (function() {
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const isLight = savedTheme === 'light' || (savedTheme === 'system' && !prefersDark);
+            if (isLight) {
+                document.documentElement.classList.add('light-mode');
+                document.documentElement.style.backgroundColor = '#f8fafc';
+            } else {
+                document.documentElement.classList.remove('light-mode');
+                document.documentElement.style.backgroundColor = '#070913';
+            }
+        })();
+    </script>
+    <style>
+        html {
+            background-color: #070913;
+        }
+        html.light-mode {
+            background-color: #f8fafc;
+        }
+        body {
+            background-color: #070913;
+        }
+        html.light-mode body {
+            background-color: #f8fafc !important;
+        }
+    </style>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register - WABA Recover</title>
-    <script>
-        // Apply theme early to prevent flash
-        const savedTheme = localStorage.getItem('theme') || 'dark';
-        if (savedTheme === 'light') {
-            document.documentElement.classList.add('light-mode');
-        }
-    </script>
     <!-- Google Fonts: Outfit -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

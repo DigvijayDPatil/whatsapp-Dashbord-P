@@ -40,8 +40,13 @@ def add_system_log(level, message, phase=None, explanation=None):
         ServerConsoleLog.objects.exclude(id__in=ids_to_keep).delete()
     return log
 
-def get_user_tenant(user):
-    """Returns the Tenant record for non-superusers, or None for superusers."""
+def get_user_tenant(user, request=None):
+    """Returns the Tenant record for non-superusers, or the impersonated Tenant if session exists, or None."""
+    if request and user and user.is_superuser:
+        impersonate_id = request.session.get('impersonate_tenant_id')
+        if impersonate_id:
+            return Tenant.objects.filter(id=impersonate_id).first()
+            
     if user and user.is_authenticated and not user.is_superuser:
         return Tenant.objects.filter(email__iexact=user.email).first() or Tenant.objects.first()
     return None
@@ -375,6 +380,10 @@ def compute_overview_stats(user=None):
 
 @login_required
 def overview_view(request):
+    if request.user.is_superuser and 'impersonate_tenant_id' in request.session:
+        request.session.pop('impersonate_tenant_id', None)
+        return redirect('overview')
+
     is_tenant = False
     tenant = None
     if not request.user.is_superuser:
@@ -403,7 +412,7 @@ def overview_view(request):
 @login_required
 def tenants_view(request):
     migrate_existing_data_if_needed()
-    user_tenant = get_user_tenant(request.user)
+    user_tenant = get_user_tenant(request.user, request)
 
     
     if request.method == 'POST':
@@ -615,7 +624,7 @@ def tenant_delete_view(request, pk):
 @login_required
 def history_view(request):
     migrate_existing_data_if_needed()
-    user_tenant = get_user_tenant(request.user)
+    user_tenant = get_user_tenant(request.user, request)
     if user_tenant:
         history = CallEventLog.objects.filter(license_key=user_tenant.license_key).order_by('-timestamp')
     else:
@@ -631,7 +640,7 @@ def history_view(request):
 @login_required
 def seed_history_view(request):
     migrate_existing_data_if_needed()
-    user_tenant = get_user_tenant(request.user)
+    user_tenant = get_user_tenant(request.user, request)
 
     if request.method == 'POST':
         suffix = ''.join(random.choices('abcdefghijklmnopqrstuvwxyz0123456789', k=5))
@@ -697,7 +706,7 @@ def seed_history_view(request):
 @login_required
 def sandbox_view(request):
     migrate_existing_data_if_needed()
-    user_tenant = get_user_tenant(request.user)
+    user_tenant = get_user_tenant(request.user, request)
     if user_tenant:
         tenants = Tenant.objects.filter(id=user_tenant.id)
     else:
@@ -943,6 +952,10 @@ def run_simulation_view(request):
 
 @login_required
 def settings_view(request):
+    if request.user.is_superuser and 'impersonate_tenant_id' in request.session:
+        request.session.pop('impersonate_tenant_id', None)
+        return redirect('settings')
+
     migrate_existing_data_if_needed()
     tenants_count = Tenant.objects.count()
     calls_count = CallEventLog.objects.count()
@@ -1019,7 +1032,10 @@ def qa_view(request):
 @login_required
 def plans_view(request):
     current_tenant = None
-    if not request.user.is_superuser:
+    impersonate_id = request.session.get('impersonate_tenant_id')
+    if impersonate_id and request.user.is_superuser:
+        current_tenant = Tenant.objects.filter(id=impersonate_id).first()
+    elif not request.user.is_superuser:
         current_tenant = Tenant.objects.filter(email__iexact=request.user.email).first()
 
     context = {
@@ -1033,7 +1049,10 @@ def plans_view(request):
 def user_dashboard_view(request):
     migrate_existing_data_if_needed()
     tenant = None
-    if not request.user.is_superuser:
+    impersonate_id = request.session.get('impersonate_tenant_id')
+    if impersonate_id and request.user.is_superuser:
+        tenant = Tenant.objects.filter(id=impersonate_id).first()
+    elif not request.user.is_superuser:
         tenant = Tenant.objects.filter(email__iexact=request.user.email).first()
     else:
         tenant = Tenant.objects.first()
@@ -1589,9 +1608,11 @@ def create_razorpay_order_view(request):
     if request.method != 'POST':
         return JsonResponse({'status': 'failed', 'message': 'Invalid request method.'}, status=200)
 
-    tenant = Tenant.objects.filter(email__iexact=request.user.email).first()
-    if not tenant and request.user.username:
-        tenant = Tenant.objects.filter(name__iexact=request.user.username).first()
+    tenant = get_user_tenant(request.user, request)
+    if not tenant:
+        tenant = Tenant.objects.filter(email__iexact=request.user.email).first()
+        if not tenant and request.user.username:
+            tenant = Tenant.objects.filter(name__iexact=request.user.username).first()
 
     if not tenant:
         tenant = Tenant.objects.create(
@@ -1759,6 +1780,21 @@ def verify_razorpay_payment_view(request):
         return JsonResponse({'status': 'failed', 'message': 'Payment signature verification failed!'}, status=400)
     except Exception as e:
         return JsonResponse({'status': 'failed', 'message': str(e)}, status=500)
+
+
+@login_required
+def impersonate_user_view(request, tenant_id):
+    if not request.user.is_superuser:
+        from django.http import HttpResponseForbidden
+        return HttpResponseForbidden("SuperAdmin access required to impersonate accounts.")
+    request.session['impersonate_tenant_id'] = str(tenant_id)
+    return redirect('user_dashboard')
+
+
+@login_required
+def exit_impersonate_view(request):
+    request.session.pop('impersonate_tenant_id', None)
+    return redirect('tenants')
 
 
 

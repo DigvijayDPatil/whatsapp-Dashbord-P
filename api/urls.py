@@ -46,5 +46,9 @@ urlpatterns = [
     # Razorpay Payment Endpoints
     path('api/create-razorpay-order/', views.create_razorpay_order_view, name='create_razorpay_order'),
     path('api/verify-razorpay-payment/', views.verify_razorpay_payment_view, name='verify_razorpay_payment'),
+
+    # Impersonation Routes
+    path('tenants/impersonate/<uuid:tenant_id>/', views.impersonate_user_view, name='impersonate_user'),
+    path('tenants/exit-impersonate/', views.exit_impersonate_view, name='exit_impersonate'),
 ]
 

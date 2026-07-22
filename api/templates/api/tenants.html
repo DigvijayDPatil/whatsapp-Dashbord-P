@@ -14,7 +14,7 @@
             </h2>
             <p class="text-xs text-slate-500">Provision active customer subscriptions and manage Meta API endpoint keys.</p>
         </div>
-        {% if request.user.is_superuser %}
+        {% if request.user.is_superuser and not is_impersonating %}
         <button onclick="toggleRegisterForm()" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl flex items-center gap-1.5 cursor-pointer shadow-lg shadow-indigo-950/40 hover:-translate-y-0.5 transition-all">
             <i data-lucide="plus-circle" class="w-4 h-4"></i>
             Register New Tenant
@@ -197,7 +197,10 @@
                                         <button onclick="openEditModal('{{ tenant.id }}', '{{ tenant.name }}', '{{ tenant.waba_token }}', '{{ tenant.phone_number_id }}', '{{ tenant.template_name }}', '{{ tenant.language_code }}')" class="p-1.5 rounded-lg border border-slate-800 bg-slate-900 text-slate-400 hover:text-indigo-400 transition-colors hover:border-indigo-500/20 cursor-pointer" title="Edit Meta WABA Configuration">
                                             <i data-lucide="settings" class="w-3.5 h-3.5"></i>
                                         </button>
-                                        {% if request.user.is_superuser %}
+                                        {% if request.user.is_superuser and not is_impersonating %}
+                                        <a href="{% url 'impersonate_user' tenant.id %}" class="p-1.5 rounded-lg border border-slate-800 bg-slate-900 text-slate-400 hover:text-indigo-400 transition-colors hover:border-indigo-500/20 cursor-pointer" title="Log in as this user (Impersonate)">
+                                            <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                                        </a>
                                         <a href="{% url 'tenant_toggle_block' tenant.id %}" class="p-1.5 rounded-lg border border-slate-800 bg-slate-900 transition-colors cursor-pointer hover:border-indigo-500/20 {% if tenant.status == 'blocked' %}text-amber-500 hover:text-emerald-400{% else %}text-slate-400 hover:text-rose-400{% endif %}" title="{% if tenant.status == 'blocked' %}Reactivate access{% else %}Instantly Block SaaS Access{% endif %}">
                                             <i data-lucide="ban" class="w-3.5 h-3.5"></i>
                                         </a>
@@ -218,7 +221,7 @@
             <!-- Mobile Stacked Row list view (Premium Card Layout) -->
             <div class="md:hidden space-y-4">
                 {% for tenant in tenants %}
-                <div class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-900 rounded-2xl p-5 space-y-4 shadow-sm dark:shadow-black/20 hover:border-indigo-500/20 transition-colors">
+                <div class="bg-slate-955 border border-slate-900 rounded-2xl p-5 space-y-4 shadow-sm hover:border-indigo-500/20 transition-colors">
                     <!-- Top Line: Avatar, Name, Email, and Status -->
                     <div class="flex justify-between items-start gap-2">
                         <div class="flex items-center gap-3">
@@ -234,22 +237,22 @@
                         <!-- Status Badge -->
                         <div>
                             {% if tenant.is_pending or tenant.status == 'pending' %}
-                                <span class="inline-flex items-center gap-1 bg-amber-100 dark:bg-amber-955/20 border border-amber-200 dark:border-amber-900/50 text-amber-600 dark:text-amber-450 px-2.5 py-0.5 rounded-full font-semibold font-sans text-[8px] uppercase tracking-wider">
+                                <span class="status-badge-expired inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-semibold font-sans text-[8px] uppercase tracking-wider">
                                     <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
                                     Pending Setup
                                 </span>
                             {% elif tenant.status == 'active' %}
-                                <span class="inline-flex items-center gap-1 bg-emerald-100 dark:bg-emerald-955/20 border border-emerald-200 dark:border-emerald-900/50 text-emerald-600 dark:text-emerald-400 px-2.5 py-0.5 rounded-full font-semibold font-sans text-[8px] uppercase tracking-wider">
+                                <span class="status-badge-active inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-semibold font-sans text-[8px] uppercase tracking-wider">
                                     <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                                     Active
                                 </span>
                             {% elif tenant.status == 'blocked' %}
-                                <span class="inline-flex items-center gap-1 bg-rose-100 dark:bg-rose-955/20 border border-rose-200 dark:border-rose-900/50 text-rose-600 dark:text-rose-400 px-2.5 py-0.5 rounded-full font-semibold font-sans text-[8px] uppercase tracking-wider">
+                                <span class="status-badge-blocked inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-semibold font-sans text-[8px] uppercase tracking-wider">
                                     <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
                                     Blocked
                                 </span>
                             {% else %}
-                                <span class="inline-flex items-center gap-1 bg-rose-100 dark:bg-rose-955/20 border border-rose-200 dark:border-rose-900/50 text-rose-600 dark:text-rose-400 px-2.5 py-0.5 rounded-full font-semibold font-sans text-[8px] uppercase tracking-wider">
+                                <span class="status-badge-blocked inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-semibold font-sans text-[8px] uppercase tracking-wider">
                                     <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
                                     Expired
                                 </span>
@@ -298,11 +301,18 @@
                         <span class="text-[8px] font-mono text-slate-450 flex items-center gap-1.5">
                             <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-500/80"></i> Config Isolation Active
                         </span>
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-2 flex-wrap justify-end">
+                            {% if request.user.is_superuser and not is_impersonating %}
+                            <a href="{% url 'impersonate_user' tenant.id %}" class="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400 hover:text-indigo-650 dark:hover:text-indigo-400 hover:border-indigo-500/20 transition-colors cursor-pointer text-[9px] font-bold flex items-center gap-1" title="Log in as this user (Impersonate)">
+                                <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                                <span>Impersonate</span>
+                            </a>
+                            {% endif %}
                             <button onclick="openEditModal('{{ tenant.id }}', '{{ tenant.name }}', '{{ tenant.waba_token }}', '{{ tenant.phone_number_id }}', '{{ tenant.template_name }}', '{{ tenant.language_code }}')" class="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400 hover:text-indigo-655 dark:hover:text-indigo-400 hover:border-indigo-500/20 transition-colors cursor-pointer text-[9px] font-bold flex items-center gap-1" title="Edit Meta WABA Configuration">
                                 <i data-lucide="settings" class="w-3.5 h-3.5"></i>
                                 <span>Edit WABA</span>
                             </button>
+                            {% if request.user.is_superuser and not is_impersonating %}
                             <a href="{% url 'tenant_toggle_block' tenant.id %}" class="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 transition-colors cursor-pointer text-[9px] font-bold flex items-center gap-1 {% if tenant.status == 'blocked' %}text-emerald-600 dark:text-emerald-400 hover:border-emerald-500/20{% else %}text-slate-500 dark:text-slate-400 hover:text-rose-500 hover:border-rose-500/20{% endif %}" title="Toggle Block access">
                                 <i data-lucide="ban" class="w-3.5 h-3.5"></i>
                                 <span>{% if tenant.status == 'blocked' %}Unblock{% else %}Block{% endif %}</span>
@@ -310,6 +320,7 @@
                             <button onclick="openDeleteModal('{{ tenant.id }}', '{{ tenant.name|escapejs }}')" class="p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400 hover:text-rose-500 transition-colors hover:border-rose-500/20 cursor-pointer" title="Permanently Delete Tenant">
                                 <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                             </button>
+                            {% endif %}
                         </div>
                     </div>
                 </div>

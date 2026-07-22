@@ -179,71 +179,96 @@
 
         
         <!-- Left: WhatsApp Meta Configuration Form (1 col) -->
-        <div class="portal-card bg-slate-950 border border-slate-900 rounded-2xl p-6 space-y-5 shadow-lg flex flex-col justify-between">
-            <div>
-                <div class="flex items-center gap-2 border-b border-slate-900 portal-border pb-3">
+        <div class="portal-card bg-slate-950 border border-slate-900 rounded-2xl p-6 space-y-5 shadow-lg">
+            <div class="flex items-center justify-between border-b border-slate-900 portal-border pb-3">
+                <div class="flex items-center gap-2">
                     <i data-lucide="settings" class="w-4 h-4 text-indigo-400"></i>
                     <h3 class="portal-title text-sm font-bold text-slate-100 uppercase tracking-wider font-mono">My WABA Integration</h3>
                 </div>
-                <p class="portal-desc text-xs text-slate-400 mt-2 leading-relaxed">Fill in your official Meta WhatsApp Cloud API credentials to generate and activate your License Key.</p>
+                {% if not tenant.is_pending %}
+                <button type="button" id="toggle-edit-btn" onclick="enableWabaEdit()" class="text-slate-400 hover:text-indigo-400 p-1.5 rounded-lg hover:bg-slate-900/50 transition-all cursor-pointer" title="Edit Integration Settings">
+                    <i data-lucide="edit-3" class="w-4 h-4"></i>
+                </button>
+                {% endif %}
+            </div>
+            <p class="portal-desc text-xs text-slate-400 leading-relaxed">Fill in your official Meta WhatsApp Cloud API credentials to generate and activate your License Key.</p>
 
-                <form method="POST" action="{% url 'user_dashboard' %}" class="space-y-4 mt-4">
-                    {% csrf_token %}
-                    <div class="space-y-1">
-                        <label class="text-[10px] font-bold text-slate-400 uppercase font-mono">Plan Duration</label>
-                        <select name="plan" id="plan-duration-select" required class="portal-input w-full text-xs px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-slate-100 font-mono focus:outline-none focus:border-indigo-500 cursor-pointer">
-                            {% if tenant.is_pending or not tenant.plan %}
-                            <option value="" disabled {% if not selected_plan %}selected{% endif %}>-- Select Subscription Plan --</option>
-                            {% endif %}
+            <form method="POST" action="{% url 'user_dashboard' %}" class="space-y-4 mt-4">
+                {% csrf_token %}
+                <div class="space-y-1">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase font-mono">Plan Duration</label>
+                    <select name="plan" id="plan-duration-select" class="portal-input w-full text-xs px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-slate-100 font-mono focus:outline-none focus:border-indigo-500 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed" {% if not tenant.is_pending %}disabled{% endif %}>
+                        {% if tenant.is_pending or not tenant.plan %}
+                        <option value="" disabled {% if not selected_plan %}selected{% endif %}>-- Select Subscription Plan --</option>
+                        {% endif %}
 
-                            {% if tenant.is_pending or not tenant.plan or tenant.plan == '1-month' %}
-                            <option value="1-month" {% if tenant.plan == '1-month' and not tenant.is_pending %}disabled{% endif %} {% if selected_plan == '1-month' or tenant.plan == '1-month' and not tenant.is_pending %}selected{% endif %}>1-Month License Plan (₹999) {% if tenant.plan == '1-month' and not tenant.is_pending %}— Currently Active{% endif %}</option>
-                            {% endif %}
+                        {% if tenant.is_pending or not tenant.plan or tenant.plan == '1-month' %}
+                        <option value="1-month" {% if tenant.plan == '1-month' and not tenant.is_pending %}disabled{% endif %} {% if selected_plan == '1-month' or tenant.plan == '1-month' and not tenant.is_pending %}selected{% endif %}>1-Month License Plan (₹999) {% if tenant.plan == '1-month' and not tenant.is_pending %}— Currently Active{% endif %}</option>
+                        {% endif %}
 
-                            {% if tenant.is_pending or not tenant.plan or tenant.plan == '1-month' or tenant.plan == '3-month' %}
-                            <option value="3-month" {% if tenant.plan == '3-month' and not tenant.is_pending %}disabled{% endif %} {% if selected_plan == '3-month' or tenant.plan == '3-month' and not tenant.is_pending %}selected{% endif %}>3-Month License Plan (₹2,499) {% if tenant.plan == '3-month' and not tenant.is_pending %}— Currently Active{% endif %}</option>
-                            {% endif %}
+                        {% if tenant.is_pending or not tenant.plan or tenant.plan == '1-month' or tenant.plan == '3-month' %}
+                        <option value="3-month" {% if tenant.plan == '3-month' and not tenant.is_pending %}disabled{% endif %} {% if selected_plan == '3-month' or tenant.plan == '3-month' and not tenant.is_pending %}selected{% endif %}>3-Month License Plan (₹2,499) {% if tenant.plan == '3-month' and not tenant.is_pending %}— Currently Active{% endif %}</option>
+                        {% endif %}
 
-                            {% if tenant.is_pending or not tenant.plan or tenant.plan == '1-month' or tenant.plan == '3-month' or tenant.plan == '6-month' %}
-                            <option value="6-month" {% if tenant.plan == '6-month' and not tenant.is_pending %}disabled{% endif %} {% if selected_plan == '6-month' or tenant.plan == '6-month' and not tenant.is_pending %}selected{% endif %}>6-Month License Plan (₹4,999) {% if tenant.plan == '6-month' and not tenant.is_pending %}— Currently Active{% endif %}</option>
-                            {% endif %}
+                        {% if tenant.is_pending or not tenant.plan or tenant.plan == '1-month' or tenant.plan == '3-month' or tenant.plan == '6-month' %}
+                        <option value="6-month" {% if tenant.plan == '6-month' and not tenant.is_pending %}disabled{% endif %} {% if selected_plan == '6-month' or tenant.plan == '6-month' and not tenant.is_pending %}selected{% endif %}>6-Month License Plan (₹4,999) {% if tenant.plan == '6-month' and not tenant.is_pending %}— Currently Active{% endif %}</option>
+                        {% endif %}
 
-                            <option value="12-month" {% if tenant.plan == '12-month' and not tenant.is_pending %}disabled{% endif %} {% if selected_plan == '12-month' or tenant.plan == '12-month' and not tenant.is_pending %}selected{% endif %}>12-Month License Plan (₹8,999) {% if tenant.plan == '12-month' and not tenant.is_pending %}— Currently Active (Highest Tier){% endif %}</option>
-                        </select>
-                    </div>
+                        <option value="12-month" {% if tenant.plan == '12-month' and not tenant.is_pending %}disabled{% endif %} {% if selected_plan == '12-month' or tenant.plan == '12-month' and not tenant.is_pending %}selected{% endif %}>12-Month License Plan (₹8,999) {% if tenant.plan == '12-month' and not tenant.is_pending %}— Currently Active (Highest Tier){% endif %}</option>
+                    </select>
+                </div>
 
-                    <div class="space-y-1">
-                        <label class="text-[10px] font-bold text-slate-400 uppercase font-mono">Phone Number ID</label>
-                        <input type="text" name="phone_number_id" value="{% if tenant.is_pending %}{% else %}{{ tenant.phone_number_id }}{% endif %}" placeholder="e.g. 109552145399" required inputmode="numeric" pattern="[0-9]+" oninput="this.value = this.value.replace(/[^0-9]/g, '')" title="Please enter numbers only" class="portal-input w-full text-xs px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-slate-100 font-mono focus:outline-none focus:border-indigo-500">
-                    </div>
+                <div class="space-y-1">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase font-mono">Phone Number ID</label>
+                    <input type="text" name="phone_number_id" id="waba-phone-id" value="{% if tenant.is_pending %}{% else %}{{ tenant.phone_number_id }}{% endif %}" placeholder="e.g. 109552145399" required inputmode="numeric" pattern="[0-9]+" oninput="this.value = this.value.replace(/[^0-9]/g, '')" title="Please enter numbers only" class="portal-input w-full text-xs px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-slate-100 font-mono focus:outline-none focus:border-indigo-500 {% if not tenant.is_pending %}cursor-default focus:border-slate-800{% endif %}" {% if not tenant.is_pending %}readonly{% endif %}>
+                </div>
 
-                    <div class="space-y-1">
-                        <label class="text-[10px] font-bold text-slate-400 uppercase font-mono">Template Name</label>
-                        <input type="text" name="template_name" value="{{ tenant.template_name|default:'' }}" placeholder="e.g. missed_call_recovery" required class="portal-input w-full text-xs px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-slate-100 font-mono focus:outline-none focus:border-indigo-500">
-                    </div>
+                <div class="space-y-1">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase font-mono">Template Name</label>
+                    <input type="text" name="template_name" id="waba-template-name" value="{{ tenant.template_name|default:'' }}" placeholder="e.g. missed_call_recovery" required class="portal-input w-full text-xs px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-slate-100 font-mono focus:outline-none focus:border-indigo-500 {% if not tenant.is_pending %}cursor-default focus:border-slate-800{% endif %}" {% if not tenant.is_pending %}readonly{% endif %}>
+                </div>
 
-                    <div class="space-y-1">
-                        <label class="text-[10px] font-bold text-slate-400 uppercase font-mono">Language Code</label>
-                        <input type="text" name="language_code" value="{{ tenant.language_code|default:'' }}" placeholder="e.g. en_US" required class="portal-input w-full text-xs px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-slate-100 font-mono focus:outline-none focus:border-indigo-500">
-                    </div>
+                <div class="space-y-1">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase font-mono">Language Code</label>
+                    <input type="text" name="language_code" id="waba-language-code" value="{{ tenant.language_code|default:'' }}" placeholder="e.g. en_US" required class="portal-input w-full text-xs px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-slate-100 font-mono focus:outline-none focus:border-indigo-500 {% if not tenant.is_pending %}cursor-default focus:border-slate-800{% endif %}" {% if not tenant.is_pending %}readonly{% endif %}>
+                </div>
 
-                    <div class="space-y-1">
-                        <label class="text-[10px] font-bold text-slate-400 uppercase font-mono">System WABA Bearer Token</label>
-                        <textarea name="waba_token" rows="3" placeholder="e.g. EAAG9zZA89ZA0IB..." required class="portal-input w-full text-xs p-3 bg-slate-900 border border-slate-800 rounded-xl text-slate-100 font-mono focus:outline-none focus:border-indigo-500 select-all">{{ tenant.waba_token }}</textarea>
-                    </div>
+                <div class="space-y-1">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase font-mono">System WABA Bearer Token</label>
+                    <textarea name="waba_token" id="waba-token" rows="3" placeholder="e.g. EAAG9zZA89ZA0IB..." required class="portal-input w-full text-xs p-3 bg-slate-900 border border-slate-800 rounded-xl text-slate-100 font-mono focus:outline-none focus:border-indigo-500 select-all {% if not tenant.is_pending %}cursor-default focus:border-slate-800{% endif %}" {% if not tenant.is_pending %}readonly{% endif %}>{{ tenant.waba_token }}</textarea>
+                </div>
 
-                    <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-800/80 portal-border">
-                        <a href="{% url 'user_dashboard' %}" class="cancel-btn h-10 px-5 text-xs font-semibold text-slate-400 hover:text-slate-200 bg-slate-900 hover:bg-slate-800 rounded-xl border border-slate-800 inline-flex items-center justify-center transition-all select-none shrink-0">
-                            Cancel
-                        </a>
-                        <button type="button" onclick="initiateRazorpayPayment(event)" class="flex-1 h-10 px-5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-emerald-600/20 hover:shadow-emerald-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap">
-                            <i data-lucide="credit-card" class="w-4 h-4 shrink-0"></i>
-                            <span id="pay-btn-text">{% if tenant.is_pending %}Proceed to Pay & Activate{% else %}Pay & Upgrade Plan{% endif %}</span>
+                <div class="flex flex-col gap-3 pt-4 border-t border-slate-800/80 portal-border w-full">
+                    {% if tenant.is_pending %}
+                    <!-- Pending Setup: Pay full-width on top, Cancel full-width below -->
+                    <button type="button" onclick="initiateRazorpayPayment(event)" class="w-full h-10 px-4 bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 hover:from-emerald-500 hover:via-emerald-400 hover:to-teal-500 text-white text-[10px] sm:text-[11px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-emerald-600/20 hover:shadow-emerald-600/30 border border-emerald-400/30 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap">
+                        <i data-lucide="credit-card" class="w-4 h-4 shrink-0"></i>
+                        <span id="pay-btn-text">Proceed to Pay & Activate</span>
+                    </button>
+                    <a href="{% url 'user_dashboard' %}" class="w-full h-10 px-4 bg-gradient-to-r from-rose-600 via-rose-500 to-pink-600 hover:from-rose-500 hover:via-rose-400 hover:to-pink-500 text-white text-[10px] sm:text-[11px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-rose-600/20 hover:shadow-rose-600/30 border border-rose-400/30 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 inline-flex items-center justify-center gap-2 select-none whitespace-nowrap">
+                        <i data-lucide="x" class="w-4 h-4 shrink-0"></i>
+                        <span>Cancel</span>
+                    </a>
+                    {% else %}
+                    <!-- Active Subscription: Pay full-width on top, Cancel & Save side-by-side below -->
+                    <button type="button" id="waba-pay-btn" onclick="initiateRazorpayPayment(event)" class="w-full h-10 px-4 bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 hover:from-emerald-500 hover:via-emerald-400 hover:to-teal-500 text-white text-[10px] sm:text-[11px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-emerald-600/20 hover:shadow-emerald-600/30 border border-emerald-400/30 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap">
+                        <i data-lucide="credit-card" class="w-4 h-4 shrink-0"></i>
+                        <span id="pay-btn-text">Pay & Upgrade Plan</span>
+                    </button>
+                    <div id="waba-actions-row" class="hidden flex items-center gap-3 w-full">
+                        <button type="button" onclick="disableWabaEdit(event)" class="flex-1 h-10 px-4 bg-gradient-to-r from-rose-600 via-rose-500 to-pink-600 hover:from-rose-500 hover:via-rose-400 hover:to-pink-500 text-white text-[10px] sm:text-[11px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-rose-600/20 hover:shadow-rose-600/30 border border-rose-400/30 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 inline-flex items-center justify-center gap-2 select-none whitespace-nowrap">
+                            <i data-lucide="x" class="w-4 h-4 shrink-0"></i>
+                            <span>Cancel</span>
+                        </button>
+                        <button type="submit" class="flex-1 h-10 px-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-violet-600 hover:from-indigo-500 hover:via-purple-500 hover:to-violet-500 text-white text-[10px] sm:text-[11px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-indigo-600/20 hover:shadow-indigo-600/30 border border-indigo-400/30 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap">
+                            <i data-lucide="save" class="w-4 h-4 shrink-0"></i>
+                            <span>Save</span>
                         </button>
                     </div>
+                    {% endif %}
+                </div>
 
-                </form>
-            </div>
+            </form>
         </div>
 
 <!-- Plan Selection Confirmation Modal -->
@@ -537,6 +562,113 @@ function executeRazorpayPayment() {
         if (payBtnText) payBtnText.textContent = 'Proceed to Pay & Activate';
     });
 }
+
+function updateWabaButtonsState() {
+    const planSelect = document.getElementById('plan-duration-select');
+    if (!planSelect) return;
+
+    const selectedPlan = planSelect.value;
+    const payBtn = document.getElementById('waba-pay-btn');
+    const actionsRow = document.getElementById('waba-actions-row');
+    if (!actionsRow) return;
+
+    const saveBtn = actionsRow.querySelector('button[type="submit"]');
+
+    if (selectedPlan !== activeTenantPlan) {
+        // Upgrade plan mode: show Pay button, hide Save button
+        if (payBtn) payBtn.classList.remove('hidden');
+        if (saveBtn) saveBtn.classList.add('hidden');
+    } else {
+        // Edit WABA details mode: hide Pay button, show Save button
+        if (payBtn) payBtn.classList.add('hidden');
+        if (saveBtn) saveBtn.classList.remove('hidden');
+    }
+}
+
+function enableWabaEdit() {
+    // 1. Show WABA actions (Cancel & Save)
+    const actionsRow = document.getElementById('waba-actions-row');
+    if (actionsRow) actionsRow.classList.remove('hidden');
+
+    // 2. Hide Edit button in header
+    const editBtn = document.getElementById('toggle-edit-btn');
+    if (editBtn) editBtn.classList.add('hidden');
+
+    // 3. Enable inputs
+    const inputs = [
+        document.getElementById('waba-phone-id'),
+        document.getElementById('waba-template-name'),
+        document.getElementById('waba-language-code'),
+        document.getElementById('waba-token')
+    ];
+
+    inputs.forEach(input => {
+        if (input) {
+            input.removeAttribute('readonly');
+            input.classList.remove('cursor-default', 'focus:border-slate-800');
+            input.classList.add('focus:border-indigo-500');
+        }
+    });
+
+    // Re-enable plan select duration if needed
+    const planSelect = document.getElementById('plan-duration-select');
+    if (planSelect) {
+        planSelect.removeAttribute('disabled');
+        planSelect.classList.remove('disabled:opacity-60', 'disabled:cursor-not-allowed');
+    }
+
+    // 4. Update the state of Pay & Save buttons based on initial selection
+    updateWabaButtonsState();
+}
+
+function disableWabaEdit(e) {
+    if (e) e.preventDefault();
+
+    // Reset plan select duration to original active plan duration first
+    const planSelect = document.getElementById('plan-duration-select');
+    if (planSelect) {
+        planSelect.value = activeTenantPlan;
+        planSelect.setAttribute('disabled', 'true');
+        planSelect.classList.add('disabled:opacity-60', 'disabled:cursor-not-allowed');
+    }
+
+    // 1. Hide WABA actions (Cancel & Save)
+    const actionsRow = document.getElementById('waba-actions-row');
+    if (actionsRow) actionsRow.classList.add('hidden');
+
+    // 2. Show Pay & Upgrade button
+    const payBtn = document.getElementById('waba-pay-btn');
+    if (payBtn) payBtn.classList.remove('hidden');
+
+    // 3. Show Edit button in header
+    const editBtn = document.getElementById('toggle-edit-btn');
+    if (editBtn) editBtn.classList.remove('hidden');
+
+    // 4. Make inputs read-only again
+    const inputs = [
+        { el: document.getElementById('waba-phone-id'), orig: "{% if tenant %}{{ tenant.phone_number_id }}{% endif %}" },
+        { el: document.getElementById('waba-template-name'), orig: "{% if tenant %}{{ tenant.template_name }}{% endif %}" },
+        { el: document.getElementById('waba-language-code'), orig: "{% if tenant %}{{ tenant.language_code }}{% endif %}" },
+        { el: document.getElementById('waba-token'), orig: "{% if tenant %}{{ tenant.waba_token|escapejs }}{% endif %}" }
+    ];
+
+    inputs.forEach(item => {
+        if (item.el) {
+            item.el.setAttribute('readonly', 'true');
+            item.el.value = item.orig; // Reset to original saved values
+            item.el.classList.add('cursor-default', 'focus:border-slate-800');
+            item.el.classList.remove('focus:border-indigo-500');
+        }
+    });
+}
+
+// Bind plan dropdown change event listener
+document.addEventListener('DOMContentLoaded', function() {
+    const planSelect = document.getElementById('plan-duration-select');
+    if (planSelect) {
+        planSelect.addEventListener('change', updateWabaButtonsState);
+    }
+});
 </script>
 
 
