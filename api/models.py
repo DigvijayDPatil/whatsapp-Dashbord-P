@@ -1,6 +1,32 @@
 from django.db import models
 import uuid
 
+class SubscriptionPlan(models.Model):
+    slug = models.SlugField(max_length=50, unique=True, help_text="Unique identifier (e.g. 1-month, 3-month, 6-month, 12-month)")
+    name = models.CharField(max_length=100)
+    subtitle = models.CharField(max_length=255, blank=True, default='')
+    duration_days = models.IntegerField(default=30)
+    price_rupees = models.DecimalField(max_digits=10, decimal_places=2)
+    monthly_equivalent = models.CharField(max_length=50, blank=True, default='')
+    discount_badge = models.CharField(max_length=100, blank=True, default='')
+    is_popular = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+    features_list = models.TextField(blank=True, default='', help_text="Enter one feature per line")
+    order = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['duration_days', 'order']
+
+    def __str__(self):
+        return f"{self.name} (₹{self.price_rupees})"
+
+    def get_features(self):
+        if not self.features_list:
+            return []
+        return [f.strip() for f in self.features_list.strip().split('\n') if f.strip()]
+
+
 class Tenant(models.Model):
     PLAN_CHOICES = [
         ('1-month', '1-month'),

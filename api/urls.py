@@ -27,8 +27,15 @@ urlpatterns = [
     path('settings/clear-logs/', views.clear_system_logs_view, name='clear_system_logs'),
     path('settings/seed-db/', views.seed_db_view, name='seed_db'),
     path('qa/', views.qa_view, name='qa'),
+    path('plans', views.plans_view),
     path('plans/', views.plans_view, name='plans'),
+    path('user-dashboard', views.user_dashboard_view),
     path('user-dashboard/', views.user_dashboard_view, name='user_dashboard'),
+    path('manage-plans/', views.manage_plans_view, name='manage_plans'),
+    path('manage-plans/create/', views.create_plan_api, name='create_plan_api'),
+    path('manage-plans/update/<int:pk>/', views.update_plan_api, name='update_plan_api'),
+    path('manage-plans/toggle/<int:pk>/', views.toggle_plan_api, name='toggle_plan_api'),
+    path('manage-plans/delete/<int:pk>/', views.delete_plan_api, name='delete_plan_api'),
     path('academy/', RedirectView.as_view(url='/qa/', permanent=True)),
 
     

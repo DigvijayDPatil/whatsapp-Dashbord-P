@@ -22,7 +22,7 @@ from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 
-from .models import Tenant, CallEventLog, ServerConsoleLog, PaymentRecord
+from .models import Tenant, CallEventLog, ServerConsoleLog, PaymentRecord, SubscriptionPlan
 
 
 # Helper to add console logs
@@ -380,6 +380,9 @@ def compute_overview_stats(user=None):
 
 @login_required
 def overview_view(request):
+    if not request.user.is_superuser:
+        return redirect('user_dashboard')
+
     if request.user.is_superuser and 'impersonate_tenant_id' in request.session:
         request.session.pop('impersonate_tenant_id', None)
         return redirect('overview')
@@ -1038,9 +1041,12 @@ def plans_view(request):
     elif not request.user.is_superuser:
         current_tenant = Tenant.objects.filter(email__iexact=request.user.email).first()
 
+    active_plans = SubscriptionPlan.objects.filter(is_active=True).order_by('duration_days', 'order')
+
     context = {
         'active_page': 'plans',
         'current_tenant': current_tenant,
+        'active_plans': active_plans,
     }
     return render(request, 'api/plans.html', context)
 
@@ -1064,7 +1070,6 @@ def user_dashboard_view(request):
         template_name = request.POST.get('template_name', '').strip()
         language_code = request.POST.get('language_code', '').strip()
 
-
         # Only allow setting plan duration once during initial setup
         if plan and (not tenant.license_key or tenant.license_key == 'PENDING_SETUP'):
             tenant.plan = plan
@@ -1078,12 +1083,10 @@ def user_dashboard_view(request):
             elif plan == '12-month':
                 tenant.expires_at = add_months(now, 12)
 
-
         tenant.waba_token = waba_token
         tenant.phone_number_id = phone_number_id
         tenant.template_name = template_name
         tenant.language_code = language_code
-
 
         # Generate unique license key when WABA info is submitted
         if not tenant.license_key or tenant.license_key == 'PENDING_SETUP':
@@ -1107,6 +1110,16 @@ def user_dashboard_view(request):
         sla_percentage = int((passed_count / total_count * 100)) if total_count > 0 else 100
 
     selected_plan = request.GET.get('plan', '').strip()
+    active_plans = list(SubscriptionPlan.objects.filter(is_active=True).order_by('duration_days', 'order'))
+
+    # Filter out lower duration plans for current active plan subscriber in User Dashboard dropdown
+    if tenant and tenant.plan:
+        curr_obj = SubscriptionPlan.objects.filter(slug=tenant.plan).first()
+        if curr_obj:
+            active_plans = [p for p in active_plans if p.duration_days >= curr_obj.duration_days]
+            # Grandfathering: If current active subscriber's plan was disabled by admin, ensure it remains visible for them
+            if not curr_obj.is_active and curr_obj not in active_plans:
+                active_plans.insert(0, curr_obj)
 
     context = {
         'active_page': 'user_dashboard',
@@ -1114,6 +1127,7 @@ def user_dashboard_view(request):
         'recent_history': recent_history,
         'sla_percentage': sla_percentage,
         'selected_plan': selected_plan,
+        'active_plans': active_plans,
     }
     return render(request, 'api/user_dashboard.html', context)
 
@@ -1634,13 +1648,17 @@ def create_razorpay_order_view(request):
     if not plan_duration:
         plan_duration = '1-month'
 
-    prices_paise = {
-        '1-month': 99900,   # ₹999
-        '3-month': 249900,  # ₹2,499
-        '6-month': 499900,  # ₹4,999
-        '12-month': 899900, # ₹8,999
-    }
-    amount_paise = prices_paise.get(plan_duration, 99900)
+    db_plan = SubscriptionPlan.objects.filter(slug=plan_duration, is_active=True).first()
+    if db_plan:
+        amount_paise = int(db_plan.price_rupees * 100)
+    else:
+        prices_paise = {
+            '1-month': 99900,   # ₹999
+            '3-month': 249900,  # ₹2,499
+            '6-month': 459900,  # ₹4,599
+            '12-month': 899900, # ₹8,999
+        }
+        amount_paise = prices_paise.get(plan_duration, 99900)
     amount_rupees = amount_paise / 100.0
 
     key_id = (settings.RAZERPAY_KEY_ID or '').strip()
@@ -1748,8 +1766,12 @@ def verify_razorpay_payment_view(request):
         tenant.status = 'active'
 
         now = timezone.now()
-        days_map = {'1-month': 30, '3-month': 90, '6-month': 180, '12-month': 365}
-        added_days = days_map.get(payment_rec.plan, 30)
+        db_plan = SubscriptionPlan.objects.filter(slug=payment_rec.plan).first()
+        if db_plan:
+            added_days = db_plan.duration_days
+        else:
+            days_map = {'1-month': 30, '3-month': 90, '6-month': 180, '12-month': 365}
+            added_days = days_map.get(payment_rec.plan, 30)
         tenant.expires_at = now + timedelta(days=added_days)
 
         # Generate License Key if pending
@@ -1795,6 +1817,157 @@ def impersonate_user_view(request, tenant_id):
 def exit_impersonate_view(request):
     request.session.pop('impersonate_tenant_id', None)
     return redirect('tenants')
+
+
+# --- DYNAMIC SUBSCRIPTION PLAN MANAGEMENT VIEWS ---
+
+@login_required
+def manage_plans_view(request):
+    if not request.user.is_superuser:
+        return HttpResponseForbidden("SuperAdmin access required.")
+    
+    plans = SubscriptionPlan.objects.all().order_by('duration_days', 'order')
+    context = {
+        'active_page': 'manage_plans',
+        'plans': plans,
+    }
+    return render(request, 'api/manage_plans.html', context)
+
+
+@login_required
+def create_plan_api(request):
+    if not request.user.is_superuser:
+        return JsonResponse({'status': 'failed', 'message': 'Forbidden'}, status=403)
+    if request.method != 'POST':
+        return JsonResponse({'status': 'failed', 'message': 'Method not allowed'}, status=405)
+
+    name = request.POST.get('name', '').strip()
+    slug = request.POST.get('slug', '').strip().lower()
+    subtitle = request.POST.get('subtitle', '').strip()
+    try:
+        duration_days = int(request.POST.get('duration_days', 30))
+    except (ValueError, TypeError):
+        duration_days = 30
+    try:
+        price_rupees = float(request.POST.get('price_rupees', 0.0))
+    except (ValueError, TypeError):
+        price_rupees = 0.0
+    monthly_equivalent = request.POST.get('monthly_equivalent', '').strip()
+    discount_badge = request.POST.get('discount_badge', '').strip()
+    is_popular = request.POST.get('is_popular') in ['on', 'true', True]
+    is_active = request.POST.get('is_active') in ['on', 'true', True]
+    features_list = request.POST.get('features_list', '').strip()
+    try:
+        order = int(request.POST.get('order', 0))
+    except (ValueError, TypeError):
+        order = 0
+
+    if not name or not slug:
+        return JsonResponse({'status': 'failed', 'message': 'Plan Name and Slug are required.'}, status=400)
+
+    if SubscriptionPlan.objects.filter(slug=slug).exists():
+        return JsonResponse({'status': 'failed', 'message': f"A plan with slug '{slug}' already exists."}, status=400)
+
+    plan = SubscriptionPlan.objects.create(
+        name=name,
+        slug=slug,
+        subtitle=subtitle,
+        duration_days=duration_days,
+        price_rupees=price_rupees,
+        monthly_equivalent=monthly_equivalent,
+        discount_badge=discount_badge,
+        is_popular=is_popular,
+        is_active=is_active,
+        features_list=features_list,
+        order=order
+    )
+
+    add_system_log('info', f"SuperAdmin created new dynamic plan '{plan.name}' (₹{plan.price_rupees})", 'Plan Management')
+    return JsonResponse({'status': 'success', 'message': f"Subscription Plan '{plan.name}' created successfully!"})
+
+
+@login_required
+def update_plan_api(request, pk):
+    if not request.user.is_superuser:
+        return JsonResponse({'status': 'failed', 'message': 'Forbidden'}, status=403)
+    if request.method != 'POST':
+        return JsonResponse({'status': 'failed', 'message': 'Method not allowed'}, status=405)
+
+    plan = get_object_or_404(SubscriptionPlan, pk=pk)
+
+    name = request.POST.get('name', '').strip()
+    slug = request.POST.get('slug', '').strip().lower()
+    subtitle = request.POST.get('subtitle', '').strip()
+    try:
+        duration_days = int(request.POST.get('duration_days', 30))
+    except (ValueError, TypeError):
+        duration_days = 30
+    try:
+        price_rupees = float(request.POST.get('price_rupees', 0.0))
+    except (ValueError, TypeError):
+        price_rupees = 0.0
+    monthly_equivalent = request.POST.get('monthly_equivalent', '').strip()
+    discount_badge = request.POST.get('discount_badge', '').strip()
+    is_popular = request.POST.get('is_popular') in ['on', 'true', True]
+    is_active = request.POST.get('is_active') in ['on', 'true', True]
+    features_list = request.POST.get('features_list', '').strip()
+    try:
+        order = int(request.POST.get('order', 0))
+    except (ValueError, TypeError):
+        order = 0
+
+    if not name or not slug:
+        return JsonResponse({'status': 'failed', 'message': 'Plan Name and Slug are required.'}, status=400)
+
+    if SubscriptionPlan.objects.filter(slug=slug).exclude(pk=pk).exists():
+        return JsonResponse({'status': 'failed', 'message': f"Another plan with slug '{slug}' already exists."}, status=400)
+
+    plan.name = name
+    plan.slug = slug
+    plan.subtitle = subtitle
+    plan.duration_days = duration_days
+    plan.price_rupees = price_rupees
+    plan.monthly_equivalent = monthly_equivalent
+    plan.discount_badge = discount_badge
+    plan.is_popular = is_popular
+    plan.is_active = is_active
+    plan.features_list = features_list
+    plan.order = order
+    plan.save()
+
+    add_system_log('info', f"SuperAdmin updated plan '{plan.name}' (₹{plan.price_rupees})", 'Plan Management')
+    return JsonResponse({'status': 'success', 'message': f"Subscription Plan '{plan.name}' updated successfully!"})
+
+
+@login_required
+def toggle_plan_api(request, pk):
+    if not request.user.is_superuser:
+        return JsonResponse({'status': 'failed', 'message': 'Forbidden'}, status=403)
+    if request.method != 'POST':
+        return JsonResponse({'status': 'failed', 'message': 'Method not allowed'}, status=405)
+
+    plan = get_object_or_404(SubscriptionPlan, pk=pk)
+    plan.is_active = not plan.is_active
+    plan.save()
+
+    state = "activated" if plan.is_active else "deactivated"
+    add_system_log('info', f"SuperAdmin {state} plan '{plan.name}'", 'Plan Management')
+    return JsonResponse({'status': 'success', 'is_active': plan.is_active, 'message': f"Plan '{plan.name}' {state}!"})
+
+
+@login_required
+def delete_plan_api(request, pk):
+    if not request.user.is_superuser:
+        return JsonResponse({'status': 'failed', 'message': 'Forbidden'}, status=403)
+    if request.method != 'POST':
+        return JsonResponse({'status': 'failed', 'message': 'Method not allowed'}, status=405)
+
+    plan = get_object_or_404(SubscriptionPlan, pk=pk)
+    name = plan.name
+    plan.delete()
+
+    add_system_log('info', f"SuperAdmin deleted plan '{name}'", 'Plan Management')
+    return JsonResponse({'status': 'success', 'message': f"Plan '{name}' deleted successfully!"})
 
 
 

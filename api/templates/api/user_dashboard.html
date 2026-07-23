@@ -202,19 +202,14 @@
                         <option value="" disabled {% if not selected_plan %}selected{% endif %}>-- Select Subscription Plan --</option>
                         {% endif %}
 
-                        {% if tenant.is_pending or not tenant.plan or tenant.plan == '1-month' %}
-                        <option value="1-month" {% if tenant.plan == '1-month' and not tenant.is_pending %}disabled{% endif %} {% if selected_plan == '1-month' or tenant.plan == '1-month' and not tenant.is_pending %}selected{% endif %}>1-Month License Plan (₹999) {% if tenant.plan == '1-month' and not tenant.is_pending %}— Currently Active{% endif %}</option>
-                        {% endif %}
-
-                        {% if tenant.is_pending or not tenant.plan or tenant.plan == '1-month' or tenant.plan == '3-month' %}
-                        <option value="3-month" {% if tenant.plan == '3-month' and not tenant.is_pending %}disabled{% endif %} {% if selected_plan == '3-month' or tenant.plan == '3-month' and not tenant.is_pending %}selected{% endif %}>3-Month License Plan (₹2,499) {% if tenant.plan == '3-month' and not tenant.is_pending %}— Currently Active{% endif %}</option>
-                        {% endif %}
-
-                        {% if tenant.is_pending or not tenant.plan or tenant.plan == '1-month' or tenant.plan == '3-month' or tenant.plan == '6-month' %}
-                        <option value="6-month" {% if tenant.plan == '6-month' and not tenant.is_pending %}disabled{% endif %} {% if selected_plan == '6-month' or tenant.plan == '6-month' and not tenant.is_pending %}selected{% endif %}>6-Month License Plan (₹4,999) {% if tenant.plan == '6-month' and not tenant.is_pending %}— Currently Active{% endif %}</option>
-                        {% endif %}
-
-                        <option value="12-month" {% if tenant.plan == '12-month' and not tenant.is_pending %}disabled{% endif %} {% if selected_plan == '12-month' or tenant.plan == '12-month' and not tenant.is_pending %}selected{% endif %}>12-Month License Plan (₹8,999) {% if tenant.plan == '12-month' and not tenant.is_pending %}— Currently Active (Highest Tier){% endif %}</option>
+                        {% for p in active_plans %}
+                        <option value="{{ p.slug }}" {% if tenant.plan == p.slug and not tenant.is_pending %}disabled{% endif %} {% if selected_plan == p.slug or tenant.plan == p.slug and not tenant.is_pending %}selected{% endif %}>{{ p.name }} Plan (₹{{ p.price_rupees|floatformat:"0" }}) {% if tenant.plan == p.slug and not tenant.is_pending %}— Currently Active{% endif %}</option>
+                        {% empty %}
+                        <option value="1-month">1-Month License Plan (₹999)</option>
+                        <option value="3-month">3-Month License Plan (₹2,499)</option>
+                        <option value="6-month">6-Month License Plan (₹4,599)</option>
+                        <option value="12-month">12-Month License Plan (₹8,999)</option>
+                        {% endfor %}
                     </select>
                 </div>
 
@@ -342,10 +337,14 @@
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <script>
 const planDetailsMap = {
+    {% for p in active_plans %}
+    '{{ p.slug }}': { name: '{{ p.name }} Plan', duration: '{{ p.duration_days }} Days', price: '₹{{ p.price_rupees|floatformat:"0" }}' },
+    {% empty %}
     '1-month': { name: '1-Month License Plan', duration: '30 Days', price: '₹999' },
     '3-month': { name: '3-Month License Plan', duration: '90 Days', price: '₹2,499' },
-    '6-month': { name: '6-Month License Plan', duration: '180 Days', price: '₹4,999' },
+    '6-month': { name: '6-Month License Plan', duration: '180 Days', price: '₹4,599' },
     '12-month': { name: '12-Month License Plan', duration: '365 Days', price: '₹8,999' }
+    {% endfor %}
 };
 
 const activeTenantPlan = "{% if not tenant.is_pending %}{{ tenant.plan }}{% else %}{% endif %}";

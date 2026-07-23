@@ -912,6 +912,89 @@
         #sidebar-nav.collapsed .toggle-btn-icon {
             transform: rotate(180deg);
         }
+
+        /* Luxury Modern Impersonation Bar */
+        .impersonate-bar-wrapper {
+            position: sticky;
+            top: 0;
+            z-index: 45;
+            padding: 0.6rem 1.5rem 0.25rem 1.5rem;
+            pointer-events: auto;
+        }
+
+        .impersonate-bar-card {
+            position: relative;
+            background: rgba(13, 17, 34, 0.95);
+            border: 1px solid rgba(99, 102, 241, 0.35);
+            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.6), 0 0 25px rgba(99, 102, 241, 0.12);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-radius: 1.25rem;
+            padding: 0.5rem 1.25rem;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        html.light-mode .impersonate-bar-card {
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            box-shadow: 0 15px 35px -5px rgba(99, 102, 241, 0.15), 0 4px 12px rgba(0, 0, 0, 0.04);
+        }
+
+        .impersonate-bar-badge {
+            background: rgba(99, 102, 241, 0.12);
+            color: #818cf8;
+            border: 1px solid rgba(99, 102, 241, 0.3);
+        }
+        html.light-mode .impersonate-bar-badge {
+            background: #eef2ff;
+            color: #4338ca;
+            border: 1px solid #c7d2fe;
+        }
+
+        .impersonate-bar-user {
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid rgba(51, 65, 85, 0.8);
+            color: #ffffff;
+        }
+        html.light-mode .impersonate-bar-user {
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            color: #0f172a !important;
+        }
+
+        .impersonate-bar-btn {
+            background: linear-gradient(135deg, #f43f5e 0%, #e11d48 50%, #be123c 100%) !important;
+            color: #ffffff !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            box-shadow: 0 4px 14px rgba(225, 29, 72, 0.35) !important;
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+        }
+        .impersonate-bar-btn:hover {
+            background: linear-gradient(135deg, #fb7185 0%, #f43f5e 50%, #e11d48 100%) !important;
+            transform: translateY(-1.5px) scale(1.02);
+            box-shadow: 0 8px 22px rgba(225, 29, 72, 0.5) !important;
+        }
+        .impersonate-bar-btn:active {
+            transform: translateY(0) scale(1);
+            box-shadow: 0 4px 10px rgba(225, 29, 72, 0.3) !important;
+        }
+
+        /* Smooth Eye Blink Animation */
+        @keyframes eyeBlinkAnimation {
+            0%, 88%, 100% {
+                transform: scaleY(1);
+                opacity: 1;
+            }
+            94% {
+                transform: scaleY(0.08);
+                opacity: 0.3;
+            }
+        }
+
+        .animate-eye-blink {
+            animation: eyeBlinkAnimation 3.5s infinite cubic-bezier(0.4, 0, 0.2, 1);
+            transform-origin: center;
+        }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
@@ -959,7 +1042,7 @@
                 <h1 class="text-sm font-black text-slate-100 tracking-tight leading-none flex items-center gap-0.5">
                     WABA <span class="bg-gradient-to-r from-indigo-500 to-violet-500 bg-clip-text text-transparent">Recover</span>
                 </h1>
-                <span class="text-[9px] font-mono font-bold text-indigo-400 mt-1.5 block tracking-wider">{% if request.user.is_superuser %}Super Admin SaaS{% else %}Subscriber Portal{% endif %}</span>
+                <span class="text-[9px] font-mono font-bold text-indigo-400 mt-1.5 block tracking-wider">{% if request.user.is_superuser and not is_impersonating %}Super Admin SaaS{% else %}Subscriber Portal{% endif %}</span>
             </div>
             
             <!-- Collapse/Expand Sidebar Button (Floating on the border edge) -->
@@ -1002,6 +1085,13 @@
                 <span>Subscription Plans</span>
             </a>
 
+            {% if request.user.is_superuser and not is_impersonating %}
+            <a href="{% url 'manage_plans' %}" title="Manage Dynamic Plans" class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-slate-900/50 decoration-none transition-all {% if active_page == 'manage_plans' %}bg-indigo-600/10 text-indigo-400{% else %}text-slate-400 hover:text-slate-200{% endif %}">
+                <i data-lucide="sliders" class="w-4 h-4"></i>
+                <span>Manage Plans</span>
+            </a>
+            {% endif %}
+
             <a href="{% url 'history' %}" title="{% if request.user.is_superuser %}Activity History{% else %}My Activity History{% endif %}" class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-slate-900/50 decoration-none transition-all {% if active_page == 'history' %}bg-indigo-600/10 text-indigo-400{% else %}text-slate-400 hover:text-slate-200{% endif %}">
                 <i data-lucide="history" class="w-4 h-4"></i>
                 <span>{% if request.user.is_superuser %}Activity History{% else %}My Activity History{% endif %}</span>
@@ -1035,10 +1125,10 @@
                 <!-- User Info Header (Left Aligned) -->
                 <div class="pt-4 px-4 pb-2.5">
                     <h4 class="text-xs font-bold text-slate-100 tracking-wide font-sans truncate">
-                        {% if request.user.is_authenticated %}{{ request.user.username }}{% else %}admin{% endif %}
+                        {% if is_impersonating and impersonated_tenant %}{{ impersonated_tenant.name }}{% elif request.user.is_authenticated %}{{ request.user.username }}{% else %}admin{% endif %}
                     </h4>
                     <p class="text-[10px] font-medium text-slate-450 mt-0.5 font-sans truncate">
-                        {% if request.user.is_authenticated %}{{ request.user.email }}{% else %}admin@gmail.com{% endif %}
+                        {% if is_impersonating and impersonated_tenant %}{{ impersonated_tenant.email }}{% elif request.user.is_authenticated %}{{ request.user.email }}{% else %}admin@gmail.com{% endif %}
                     </p>
                 </div>
 
@@ -1072,7 +1162,9 @@
                 <div id="user-profile-clickable" class="flex items-center gap-3 group/user flex-1 min-w-0">
                     <!-- Avatar circle with linear gradient and pulsing status dot -->
                     <div id="user-avatar-badge" class="session-avatar relative flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-600 font-bold text-xs text-white uppercase shadow-lg shadow-indigo-500/20 group-hover/user:scale-105 transition-transform shrink-0">
-                        {% if request.user.is_authenticated %}
+                        {% if is_impersonating and impersonated_tenant %}
+                            {{ impersonated_tenant.name|slice:":1" }}
+                        {% elif request.user.is_authenticated %}
                             {{ request.user.username|slice:":1" }}
                         {% else %}
                             A
@@ -1084,13 +1176,15 @@
                     <!-- Username & Active State Details -->
                     <div class="flex flex-col text-left min-w-0">
                         <span class="session-username text-xs font-bold text-slate-200 group-hover/user:text-indigo-400 transition-colors tracking-wide truncate">
-                            {% if request.user.is_authenticated %}
+                            {% if is_impersonating and impersonated_tenant %}
+                                {{ impersonated_tenant.name }}
+                            {% elif request.user.is_authenticated %}
                                 {{ request.user.username }}
                             {% else %}
                                 Admin
                             {% endif %}
                         </span>
-                        <span class="session-active-label text-[8px] font-bold text-slate-500 tracking-wider uppercase mt-0.5">Session Active</span>
+                        <span class="session-active-label text-[8px] font-bold text-slate-500 tracking-wider uppercase mt-0.5">{% if is_impersonating %}Impersonating User{% else %}Session Active{% endif %}</span>
                     </div>
                 </div>
                 
@@ -1099,23 +1193,44 @@
     </aside>
 
     <!-- Main Content Panel wrapper -->
-    <div class="flex-1 flex flex-col min-h-screen overflow-x-hidden">
+    <div class="flex-1 flex flex-col min-h-screen overflow-x-clip">
         {% if is_impersonating %}
-        <!-- Impersonation Active Banner -->
-        <div class="bg-indigo-600 dark:bg-indigo-950/90 text-white dark:text-indigo-200 border-b border-indigo-500/20 px-6 py-3 flex items-center justify-between text-xs backdrop-blur-md transition-all select-none shrink-0">
-            <div class="flex items-center gap-2.5">
-                <span class="flex h-2 w-2 relative">
-                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                </span>
-                <span class="font-medium tracking-wide">
-                    Admin Impersonation Mode: Currently viewing account as <strong class="text-white underline underline-offset-2">{{ impersonated_tenant.name }}</strong> ({{ impersonated_tenant.email }})
-                </span>
+        <!-- Luxury Modern Impersonation Bar -->
+        <div class="impersonate-bar-wrapper shrink-0 select-none">
+            <div class="impersonate-bar-card flex items-center justify-between gap-4 text-xs">
+                
+                <div class="flex items-center gap-3.5 min-w-0">
+                    <!-- Icon Box -->
+                    <div class="relative flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-600 text-white shadow-md shadow-indigo-500/25 shrink-0">
+                        <i data-lucide="eye" class="w-4 h-4 animate-eye-blink relative z-10"></i>
+                    </div>
+
+                    <!-- Details -->
+                    <div class="flex flex-wrap items-center gap-2.5 min-w-0">
+                        <span class="impersonate-bar-badge px-3 py-1 rounded-full text-[10px] font-mono font-extrabold uppercase tracking-widest flex items-center gap-1.5 shrink-0">
+                            <span class="relative flex h-2 w-2">
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+                            </span>
+                            Impersonating Account
+                        </span>
+                        
+                        <span class="text-slate-900 dark:text-slate-100 text-xs font-semibold truncate flex items-center gap-1.5">
+                            Viewing account as 
+                            <strong class="impersonate-bar-user px-2.5 py-0.5 rounded-lg font-black tracking-tight font-mono text-xs shadow-sm">
+                                {{ impersonated_tenant.name }}
+                            </strong> 
+                            <span class="text-slate-500 dark:text-slate-400 font-mono text-[11px] hidden lg:inline">({{ impersonated_tenant.email }})</span>
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Action Button -->
+                <a href="{% url 'exit_impersonate' %}" class="impersonate-bar-btn px-4 py-1.5 rounded-xl text-xs font-black flex items-center gap-2 shrink-0 decoration-none font-sans cursor-pointer">
+                    <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
+                    <span>Exit Impersonation</span>
+                </a>
             </div>
-            <a href="{% url 'exit_impersonate' %}" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold transition-all shadow-md cursor-pointer hover:scale-105 inline-flex items-center gap-1.5 decoration-none select-none">
-                <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
-                Exit Impersonation
-            </a>
         </div>
         {% endif %}
         
