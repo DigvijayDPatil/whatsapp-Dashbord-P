@@ -52,6 +52,18 @@
     html.light-mode .license-border {
         border-color: #cbd5e1 !important;
     }
+
+    /* Discontinued Alert Box Light Mode Overrides */
+    html.light-mode .discontinued-alert-box {
+        background-color: #fffbeb !important;
+        border-color: #fde68a !important;
+    }
+    html.light-mode .discontinued-alert-text {
+        color: #b45309 !important;
+    }
+    html.light-mode .discontinued-stat-val {
+        color: #d97706 !important;
+    }
 </style>
 {% endblock %}
 
@@ -132,13 +144,19 @@
     <!-- Statistics Grid (4 Key Metrics) -->
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <!-- Active Subscription Plan -->
-        <div class="portal-card bg-slate-950 border border-slate-900 p-5 rounded-2xl space-y-2 shadow-lg">
+        <div class="portal-card bg-slate-950 border {% if is_plan_discontinued %}border-amber-500/40{% else %}border-slate-900{% endif %} p-5 rounded-2xl space-y-2 shadow-lg">
             <div class="flex justify-between items-center text-slate-500">
                 <span class="text-xs font-bold uppercase tracking-wider portal-subtext text-slate-400 font-mono">Plan Tier</span>
-                <i data-lucide="crown" class="w-4 h-4 text-indigo-400"></i>
+                <i data-lucide="crown" class="w-4 h-4 {% if is_plan_discontinued %}discontinued-stat-val text-amber-400{% else %}text-indigo-400{% endif %}"></i>
             </div>
-            <div class="portal-stat-val text-2xl font-black font-mono text-indigo-400 tracking-tight">{% if tenant.is_pending or not tenant.plan %}0{% else %}{{ tenant.plan|title }}{% endif %}</div>
+            <div class="portal-stat-val text-2xl font-black font-mono {% if is_plan_discontinued %}discontinued-stat-val text-amber-400{% else %}text-indigo-400{% endif %} tracking-tight">{% if tenant.is_pending or not tenant.plan %}0{% elif plan_display_name %}{{ plan_display_name }}{% else %}{{ tenant.plan|title }}{% endif %}</div>
             <div class="text-[10px] portal-subtext text-slate-500 font-mono">{% if tenant.is_pending or not tenant.plan %}Select Plan Below{% else %}Renews: {{ tenant.expires_at|date:"Y-m-d" }}{% endif %}</div>
+            {% if is_plan_discontinued %}
+            <div class="discontinued-alert-box flex items-start gap-2 mt-2 p-2.5 rounded-xl bg-amber-500/15 border border-amber-500/30">
+                <i data-lucide="alert-triangle" class="w-3.5 h-3.5 discontinued-alert-text text-amber-400 shrink-0 mt-0.5"></i>
+                <span class="discontinued-alert-text text-[10px] text-amber-300 font-mono font-medium leading-tight">Plan discontinued — choose a new plan before expiry</span>
+            </div>
+            {% endif %}
         </div>
 
 
@@ -203,7 +221,7 @@
                         {% endif %}
 
                         {% for p in active_plans %}
-                        <option value="{{ p.slug }}" {% if tenant.plan == p.slug and not tenant.is_pending %}disabled{% endif %} {% if selected_plan == p.slug or tenant.plan == p.slug and not tenant.is_pending %}selected{% endif %}>{{ p.name }} Plan (₹{{ p.price_rupees|floatformat:"0" }}) {% if tenant.plan == p.slug and not tenant.is_pending %}— Currently Active{% endif %}</option>
+                        <option value="{{ p.slug }}" {% if tenant.plan == p.slug and not tenant.is_pending %}disabled{% endif %} {% if selected_plan == p.slug or tenant.plan == p.slug and not tenant.is_pending %}selected{% endif %}>{{ p.name }} Plan (₹{{ p.price_rupees|floatformat:"0" }}) {% if tenant.plan == p.slug and not tenant.is_pending %}— Currently Active{% if is_plan_discontinued %} (Discontinued){% endif %}{% endif %}</option>
                         {% empty %}
                         <option value="1-month">1-Month License Plan (₹999)</option>
                         <option value="3-month">3-Month License Plan (₹2,499)</option>

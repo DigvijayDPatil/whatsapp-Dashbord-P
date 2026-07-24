@@ -1041,7 +1041,15 @@ def plans_view(request):
     elif not request.user.is_superuser:
         current_tenant = Tenant.objects.filter(email__iexact=request.user.email).first()
 
-    active_plans = SubscriptionPlan.objects.filter(is_active=True).order_by('duration_days', 'order')
+    active_plans = list(SubscriptionPlan.objects.filter(is_active=True).order_by('duration_days', 'order'))
+
+    # If subscriber's current plan was deactivated by admin, include it in active_plans in sorted order
+    if current_tenant and current_tenant.plan and not current_tenant.is_pending:
+        curr_plan_obj = SubscriptionPlan.objects.filter(slug=current_tenant.plan).first()
+        if curr_plan_obj and not curr_plan_obj.is_active:
+            if curr_plan_obj not in active_plans:
+                active_plans.append(curr_plan_obj)
+                active_plans.sort(key=lambda p: (p.duration_days, p.order))
 
     context = {
         'active_page': 'plans',
@@ -1112,10 +1120,17 @@ def user_dashboard_view(request):
     selected_plan = request.GET.get('plan', '').strip()
     active_plans = list(SubscriptionPlan.objects.filter(is_active=True).order_by('duration_days', 'order'))
 
+    # Track if the subscriber's current plan has been discontinued by admin
+    is_plan_discontinued = False
+    plan_display_name = None
+
     # Filter out lower duration plans for current active plan subscriber in User Dashboard dropdown
     if tenant and tenant.plan:
         curr_obj = SubscriptionPlan.objects.filter(slug=tenant.plan).first()
         if curr_obj:
+            plan_display_name = curr_obj.name
+            if not curr_obj.is_active:
+                is_plan_discontinued = True
             active_plans = [p for p in active_plans if p.duration_days >= curr_obj.duration_days]
             # Grandfathering: If current active subscriber's plan was disabled by admin, ensure it remains visible for them
             if not curr_obj.is_active and curr_obj not in active_plans:
@@ -1128,6 +1143,8 @@ def user_dashboard_view(request):
         'sla_percentage': sla_percentage,
         'selected_plan': selected_plan,
         'active_plans': active_plans,
+        'is_plan_discontinued': is_plan_discontinued,
+        'plan_display_name': plan_display_name,
     }
     return render(request, 'api/user_dashboard.html', context)
 
@@ -1962,8 +1979,28 @@ def delete_plan_api(request, pk):
     if request.method != 'POST':
         return JsonResponse({'status': 'failed', 'message': 'Method not allowed'}, status=405)
 
+    password = request.POST.get('password', '')
+    if not password:
+        return JsonResponse({'status': 'failed', 'message': 'Password is required.'})
+
+    user = authenticate(username=request.user.username, password=password)
+    if user is None:
+        return JsonResponse({'status': 'failed', 'message': 'Incorrect password. Please try again.'})
+
     plan = get_object_or_404(SubscriptionPlan, pk=pk)
     name = plan.name
+
+    # Block deletion if any active subscribers are on this plan
+    active_subscribers = Tenant.objects.filter(plan=plan.slug, status='active')
+    if active_subscribers.exists():
+        count = active_subscribers.count()
+        names = ", ".join([t.name for t in active_subscribers[:3]])
+        suffix = f" and {count - 3} more" if count > 3 else ""
+        return JsonResponse({
+            'status': 'failed',
+            'message': f"Cannot delete! {count} active subscriber(s) currently on this plan: {names}{suffix}. Please deactivate the plan instead to hide it from new users."
+        })
+
     plan.delete()
 
     add_system_log('info', f"SuperAdmin deleted plan '{name}'", 'Plan Management')
